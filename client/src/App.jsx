@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import TrackTabs from './components/TrackTabs';
+import JobList from './components/JobList';
 
 export default function App() {
   const [tracks, setTracks] = useState([]);
@@ -73,9 +74,16 @@ export default function App() {
         />
       )}
 
-      <main className="flex-1 px-6 py-4 overflow-auto">
-        <p className="text-gray-500 text-sm">{jobs.length} jobs · {activeTrack}</p>
-      </main>
+      <div className="flex flex-1 overflow-hidden">
+        <main className="flex-1 px-6 py-4 overflow-auto">
+          <JobList
+            jobs={jobs}
+            selectedJob={selectedJob}
+            onSelect={setSelectedJob}
+            onStatusChange={handleStatusChange}
+          />
+        </main>
+      </div>
     </div>
   );
 }
