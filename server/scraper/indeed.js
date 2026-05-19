@@ -140,9 +140,15 @@ async function scrape(track) {
             const href = await card
               .$eval('h2.jobTitle a', el => el.getAttribute('href'))
               .catch(() => '');
-            const applyUrl = href
+            const rawUrl = href
               ? href.startsWith('http') ? href : `https://ca.indeed.com${href}`
               : '';
+            // Normalize to canonical viewjob URL using the stable jk param.
+            // Indeed tracking URLs rotate fid/ad params each scrape, breaking UNIQUE dedup.
+            const jkMatch = rawUrl.match(/[?&]jk=([^&]+)/);
+            const applyUrl = jkMatch
+              ? `https://ca.indeed.com/viewjob?jk=${jkMatch[1]}`
+              : rawUrl;
 
             if (!title || !applyUrl) continue;
 
