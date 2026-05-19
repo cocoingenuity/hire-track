@@ -9,7 +9,7 @@ function parsePostedDate(text) {
 
   if (/30\+/.test(t)) return null; // "30+ days ago" → too old to parse meaningfully
 
-  if (/just posted|today/.test(t)) return now.toISOString().split('T')[0];
+  if (/\bnew\b|just posted|today/.test(t)) return now.toISOString().split('T')[0];
 
   const h = t.match(/(\d+)\s*hour/);
   if (h) return now.toISOString().split('T')[0];
@@ -51,16 +51,17 @@ async function getJobDateFromDetailPage(context, applyUrl, title) {
         '[class*="jobMetadata"] span',
         '[class*="jobInfoItem"]',
       ];
-      const dateRe = /(\d+\s+(?:hour|day|week)s?\s+ago|today|just\s+posted)/i;
+      const dateRe = /(\d+\+?\s*(?:hour|day|week)s?\s*ago|today|just\s+posted)/i;
       for (const sel of selectors) {
         for (const el of document.querySelectorAll(sel)) {
           const t = (el.innerText || el.textContent || '').trim();
-          if (dateRe.test(t)) return t;
+          const m = t.match(dateRe);
+          if (m) return m[0].trim();
         }
       }
-      // Line-anchored body scan — avoids matching dates inside job description prose
+      // Broad body scan — job description prose won't contain "X days ago" patterns
       const body = document.body ? (document.body.innerText || '') : '';
-      const m = body.match(/^(\d+\s+(?:hour|day|week)s?\s+ago|[Tt]oday|[Jj]ust\s+[Pp]osted)$/im);
+      const m = body.match(/(\d+\+?\s*(?:hour|day|week)s?\s*ago|[Tt]oday|[Jj]ust\s+[Pp]osted)/i);
       return m ? m[0].trim() : '';
     }).catch(() => '');
 
@@ -95,7 +96,8 @@ async function scrape(track) {
         await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15000 });
         await page.waitForTimeout(DELAY());
 
-        const cards = await page.$$('div.job_seen_beacon, [data-testid="slider_container"]');
+        // slider_container wraps job_seen_beacon — use only the outer element to avoid duplicates
+        const cards = await page.$$('[data-testid="slider_container"]');
         if (cards.length === 0) break;
 
         for (const card of cards) {
@@ -116,7 +118,7 @@ async function scrape(track) {
               .$eval('[data-testid="text-location"]', el => el.textContent.trim())
               .catch(() => '');
 
-            // Extract date text from card — try specific selectors first, then full-text scan
+            // Extract date text from card — try specific selectors, then "New" badge, then full-text scan
             const cardDateText = await card.evaluate(el => {
               const dateRe = /(\d+\+?\s*(?:hour|day|week)s?\s*ago|[Tt]oday|[Jj]ust\s+[Pp]osted)/i;
               const dateSelectors = [
@@ -133,6 +135,12 @@ async function scrape(track) {
                   const t = (elem.innerText || elem.textContent || '').trim();
                   const m = t.match(dateRe);
                   if (m) return m[0].trim();
+                }
+              }
+              // Indeed uses a "New" badge (leaf element) for brand-new listings instead of a date string
+              for (const elem of el.querySelectorAll('div, span')) {
+                if (elem.children.length === 0 && (elem.innerText || elem.textContent || '').trim() === 'New') {
+                  return 'new';
                 }
               }
               const text = el.innerText || el.textContent || '';
