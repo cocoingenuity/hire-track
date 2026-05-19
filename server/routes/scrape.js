@@ -89,6 +89,7 @@ async function runScrapeJob(db, trackId, runId) {
             match_score = ?, match_tier = ?,
             strengths = ?, gaps = ?, key_requirements = ?,
             apply_recommendation = ?, one_line_pitch = ?,
+            noc_code = ?, noc_explanation = ?,
             analyzed_at = datetime('now')
           WHERE id = ?
         `).run(
@@ -98,6 +99,8 @@ async function runScrapeJob(db, trackId, runId) {
           JSON.stringify(result.key_requirements),
           result.apply_recommendation ? 1 : 0,
           result.one_line_pitch,
+          result.noc_code || null,
+          result.noc_explanation || null,
           job.id
         );
         jobsAnalyzed++;

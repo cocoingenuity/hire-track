@@ -38,6 +38,8 @@ function getDb() {
       key_requirements  TEXT,
       apply_recommendation INTEGER,
       one_line_pitch    TEXT,
+      noc_code          TEXT,
+      noc_explanation   TEXT,
       analyzed_at       TEXT,
       status            TEXT DEFAULT NULL,
       scraped_at        TEXT DEFAULT CURRENT_TIMESTAMP
@@ -60,12 +62,16 @@ function getDb() {
   const ver = _db.pragma('user_version', { simple: true });
   if (ver < 1) {
     if (!isTest) {
-      // Remove fixture jobs that were inserted during dry-run testing
       _db.prepare("DELETE FROM jobs WHERE source = 'fixture'").run();
     }
-    // Reset auto-assigned 'Saved' status — only explicit user choices should have a status
     _db.prepare("UPDATE jobs SET status = NULL WHERE status = 'Saved'").run();
     _db.pragma('user_version = 1');
+  }
+  if (ver < 2) {
+    // Add NOC classification columns (ALTER TABLE is safe on existing DBs; fresh DBs get them from CREATE TABLE)
+    try { _db.prepare('ALTER TABLE jobs ADD COLUMN noc_code TEXT').run(); } catch {}
+    try { _db.prepare('ALTER TABLE jobs ADD COLUMN noc_explanation TEXT').run(); } catch {}
+    _db.pragma('user_version = 2');
   }
 
   // Every startup: abandon any scrape runs that were left in 'running' state by a

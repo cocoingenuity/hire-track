@@ -11,6 +11,7 @@ const TIER_STYLES = {
   'Skip':         { badge: 'bg-gray-800 text-gray-400',     border: 'border-l-gray-600',   score: 'bg-gray-600 text-gray-200' },
 };
 
+
 const STATUSES = ['Saved', 'Applied', 'Interview', 'Offer', 'Rejected'];
 
 export default function JobCard({ job, isSelected, onSelect, onStatusChange }) {
