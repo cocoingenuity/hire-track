@@ -29,32 +29,90 @@ function parsePostedDate(text) {
   return null;
 }
 
-async function getPostedDate(context, url) {
+// Visit the job detail page, follow the company name link to the company jobs page,
+// then find this specific job's card (matched by jk key) to extract the posting date.
+async function getJobDateViaCompanyPage(context, applyUrl, title) {
+  const jkMatch = applyUrl.match(/[?&]jk=([^&]+)/);
+  const jk = jkMatch ? jkMatch[1] : null;
+
   const page = await context.newPage();
   try {
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 10000 });
+    // Step 1: visit job detail page
+    await page.goto(applyUrl, { waitUntil: 'domcontentloaded', timeout: 12000 });
     await page.waitForTimeout(1500);
-    const raw = await page.evaluate(() => {
+
+    // Step 2: find the company name link (href contains /cmp/)
+    const companyHref = await page.evaluate(() => {
       const selectors = [
-        '[data-testid="job-posted-date"]',
-        '[class*="jobPosted"]',
-        '[class*="postedDate"]',
-        '[class*="posted"]',
-        '[class*="date"]',
+        'a[data-testid="inlineHeader-companyName"]',
+        '[class*="companyName"] a[href*="/cmp/"]',
+        'a[href*="/cmp/"]',
       ];
       for (const sel of selectors) {
         const el = document.querySelector(sel);
-        if (el) {
-          const t = (el.innerText || el.textContent || '').trim();
-          if (t && /ago|today|posted|hour|day|week/i.test(t)) return t;
+        if (el) return el.getAttribute('href');
+      }
+      return null;
+    }).catch(() => null);
+
+    if (!companyHref) {
+      console.log(`[scraper] no /cmp/ link on detail page for "${title.substring(0, 40)}"`);
+      return '';
+    }
+
+    // Build base company URL (strip query params / sub-paths after the slug)
+    const fullCompanyUrl = companyHref.startsWith('http')
+      ? companyHref
+      : `https://ca.indeed.com${companyHref.startsWith('/') ? companyHref : '/' + companyHref}`;
+    const cmpMatch = fullCompanyUrl.match(/(https:\/\/[^/]+\/cmp\/[^/?#]+)/);
+    const baseCompanyUrl = cmpMatch ? cmpMatch[1] : fullCompanyUrl.split('?')[0];
+
+    // Step 3: navigate to the company's jobs page
+    await page.goto(`${baseCompanyUrl}/jobs`, { waitUntil: 'domcontentloaded', timeout: 12000 });
+    await page.waitForTimeout(1500);
+
+    // Step 4: find the date for this specific job
+    const dateText = await page.evaluate((jk, title) => {
+      function extractDateNear(el) {
+        let node = el;
+        for (let i = 0; i < 7; i++) {
+          node = node.parentElement;
+          if (!node) break;
+          // Check all descendants of the ancestor for date-like leaf text
+          for (const child of node.querySelectorAll('*')) {
+            if (child.children.length > 0) continue; // leaf nodes only
+            const t = (child.innerText || child.textContent || '').trim();
+            if (/^(\d+\s+(hour|day|week)s?\s+ago|[Tt]oday|[Jj]ust\s+[Pp]osted)$/i.test(t)) return t;
+          }
+        }
+        return '';
+      }
+
+      // Primary: find job card linked by jk key
+      if (jk) {
+        const link = document.querySelector(`a[href*="jk=${jk}"]`);
+        if (link) {
+          const d = extractDateNear(link);
+          if (d) return d;
         }
       }
-      const body = document.body.innerText || '';
-      const m = body.match(/(?:active|posted)\s+(\d+\s+(?:hour|day|week)s?\s+ago|[Tt]oday|[Jj]ust\s+[Pp]osted)/i);
-      return m ? m[0].trim() : '';
-    }).catch(() => '');
-    return raw;
-  } catch {
+
+      // Fallback: match by title text in any heading-like element
+      const headings = document.querySelectorAll('h2, h3, [class*="jobTitle"], [class*="title"]');
+      for (const h of headings) {
+        const text = (h.innerText || h.textContent || '').trim();
+        if (text.length > 4 && title.toLowerCase().includes(text.toLowerCase().substring(0, 14))) {
+          const d = extractDateNear(h);
+          if (d) return d;
+        }
+      }
+
+      return '';
+    }, jk, title).catch(() => '');
+
+    return dateText;
+  } catch (err) {
+    console.log(`[scraper] company page error for "${title.substring(0, 40)}": ${err.message.substring(0, 60)}`);
     return '';
   } finally {
     await page.close();
@@ -104,26 +162,12 @@ async function scrape(track) {
               .$eval('[data-testid="text-location"]', el => el.textContent.trim())
               .catch(() => '');
 
-            // Try card-level date extraction first (fast path)
+            // Quick card-level stale check (30+ days / month text in card)
             const cardDateText = await card.evaluate(el => {
-              const selectors = [
-                '[data-testid*="date"]', '[data-testid*="Date"]',
-                'span.date', '[class*="date"]', '[class*="Date"]',
-                '[class*="age"]', '[class*="Age"]', '[class*="posted"]', '[class*="Posted"]',
-              ];
-              for (const sel of selectors) {
-                const found = el.querySelector(sel);
-                if (found) {
-                  const t = (found.innerText || found.textContent || '').trim();
-                  if (t && /ago|today|posted|hour|day|week/i.test(t)) return t;
-                }
-              }
               const visibleText = (el.innerText || el.textContent || '');
               const m = visibleText.match(/(?:active|posted)?\s*(\d+\s+(?:hour|day|week)s?\s+ago|[Tt]oday|[Jj]ust\s+[Pp]osted)/i);
               return m ? m[0].trim() : '';
             }).catch(() => '');
-
-            // Skip stale listings (30+ days old)
             if (/30\+|\bmonth\b/i.test(cardDateText)) continue;
 
             const description = await card.evaluate(el => {
@@ -143,8 +187,6 @@ async function scrape(track) {
             const rawUrl = href
               ? href.startsWith('http') ? href : `https://ca.indeed.com${href}`
               : '';
-            // Normalize to canonical viewjob URL using the stable jk param.
-            // Indeed tracking URLs rotate fid/ad params each scrape, breaking UNIQUE dedup.
             const jkMatch = rawUrl.match(/[?&]jk=([^&]+)/);
             const applyUrl = jkMatch
               ? `https://ca.indeed.com/viewjob?jk=${jkMatch[1]}`
@@ -152,12 +194,18 @@ async function scrape(track) {
 
             if (!title || !applyUrl) continue;
 
-            // Parse card date; if missing, visit the job detail page
-            let date_posted = parsePostedDate(cardDateText);
-            if (!date_posted) {
-              const detailDateText = await getPostedDate(context, applyUrl);
-              date_posted = parsePostedDate(detailDateText);
-              console.log(`[scraper] detail date "${title.substring(0, 40)}": "${detailDateText}" → ${date_posted}`);
+            // Get real posting date via company page
+            const dateRaw = await getJobDateViaCompanyPage(context, applyUrl, title);
+            const date_posted = parsePostedDate(dateRaw);
+            console.log(`[scraper] "${title.substring(0, 45)}" → "${dateRaw}" → ${date_posted}`);
+
+            // 14-day freshness filter — skip stale jobs entirely
+            if (date_posted) {
+              const ageDays = (Date.now() - new Date(date_posted).getTime()) / 86400000;
+              if (ageDays > 14) {
+                console.log(`[scraper] skip stale (${Math.round(ageDays)}d old)`);
+                continue;
+              }
             }
 
             allJobs.push({ title, company, location, date_posted, description, apply_url: applyUrl, source: 'indeed' });
