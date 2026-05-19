@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import TrackTabs from './components/TrackTabs';
 import JobList from './components/JobList';
+import ScrapeProgress from './components/ScrapeProgress';
 
 export default function App() {
   const [tracks, setTracks] = useState([]);
@@ -73,6 +74,12 @@ export default function App() {
           isRefreshing={isRefreshing}
         />
       )}
+
+      <ScrapeProgress
+        trackId={activeTrack}
+        isActive={isRefreshing}
+        onComplete={handleScrapeComplete}
+      />
 
       <div className="flex flex-1 overflow-hidden">
         <main className="flex-1 px-6 py-4 overflow-auto">
