@@ -1,0 +1,80 @@
+{
+  "it-support": [
+    {
+      "title": "IT Support Specialist",
+      "company": "Telesat",
+      "location": "Ottawa, ON",
+      "date_posted": "2 days ago",
+      "description": "Provide Tier 1/2 desktop support in a Windows and Active Directory environment. Manage service tickets in ServiceNow. Configure laptops, printers, and VPN access for 500+ employees. Strong troubleshooting and communication skills required.",
+      "apply_url": "https://fixture.example.com/jobs/it-1"
+    },
+    {
+      "title": "Helpdesk Analyst",
+      "company": "Shopify",
+      "location": "Ottawa, ON",
+      "date_posted": "1 day ago",
+      "description": "Support internal employees across macOS and Windows. ITIL-based ticket management. Office 365 administration, hardware provisioning, onboarding support. Strong customer service orientation required.",
+      "apply_url": "https://fixture.example.com/jobs/it-2"
+    },
+    {
+      "title": "Technical Support Analyst",
+      "company": "DND",
+      "location": "Ottawa, ON",
+      "date_posted": "5 days ago",
+      "description": "Government IT support role. Reliability security clearance required. Windows 10/11 environments, VPN troubleshooting, remote support tools. Bilingual (English/French) an asset.",
+      "apply_url": "https://fixture.example.com/jobs/it-3"
+    }
+  ],
+  "admin": [
+    {
+      "title": "Administrative Assistant",
+      "company": "Government of Canada",
+      "location": "Ottawa, ON",
+      "date_posted": "3 days ago",
+      "description": "Manage executive calendars, draft correspondence, coordinate meetings and travel. Advanced MS Office (Word, Excel, PowerPoint, Outlook). Experience in federal government an asset.",
+      "apply_url": "https://fixture.example.com/jobs/admin-1"
+    },
+    {
+      "title": "Office Coordinator",
+      "company": "Ottawa Community Foundation",
+      "location": "Ottawa, ON",
+      "date_posted": "2 days ago",
+      "description": "Coordinate day-to-day office operations, manage supplies and vendors, support leadership team. Strong organizational and interpersonal skills. Non-profit experience an asset.",
+      "apply_url": "https://fixture.example.com/jobs/admin-2"
+    },
+    {
+      "title": "Operations Assistant",
+      "company": "Canadian Heritage",
+      "location": "Ottawa, ON",
+      "date_posted": "7 days ago",
+      "description": "Support operations team with data entry, scheduling, and stakeholder communication. Experience with GCMS or similar government systems preferred. Bilingualism strongly preferred.",
+      "apply_url": "https://fixture.example.com/jobs/admin-3"
+    }
+  ],
+  "retail": [
+    {
+      "title": "Apple Specialist",
+      "company": "Apple Retail",
+      "location": "Ottawa, ON (Rideau Centre)",
+      "date_posted": "1 day ago",
+      "description": "Help customers explore and buy Apple products. Passion for technology and customer education. No prior Apple experience required — training provided. Full-time and part-time available. Competitive benefits.",
+      "apply_url": "https://fixture.example.com/jobs/retail-1"
+    },
+    {
+      "title": "Mobile Advisor",
+      "company": "Bell Canada",
+      "location": "Ottawa, ON",
+      "date_posted": "4 days ago",
+      "description": "Sell mobile devices and wireless plans. Meet monthly sales targets. Strong knowledge of Android and iOS ecosystem. Prior wireless retail experience preferred.",
+      "apply_url": "https://fixture.example.com/jobs/retail-2"
+    },
+    {
+      "title": "Consumer Electronics Specialist",
+      "company": "London Drugs",
+      "location": "Ottawa, ON",
+      "date_posted": "6 days ago",
+      "description": "Assist customers with electronics purchases. Demonstrate TVs, laptops, cameras, and smart home devices. Meet sales targets. Previous retail or electronics experience required.",
+      "apply_url": "https://fixture.example.com/jobs/retail-3"
+    }
+  ]
+}
