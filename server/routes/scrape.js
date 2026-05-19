@@ -46,8 +46,8 @@ async function runScrapeJob(db, trackId, runId) {
     jobsFound++;
     try {
       db.prepare(`
-        INSERT INTO jobs (track, title, company, location, date_posted, description, apply_url, source)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO jobs (track, title, company, location, date_posted, description, apply_url, source, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL)
       `).run(
         trackId, job.title, job.company,
         job.location || null, job.date_posted || null,
@@ -66,24 +66,36 @@ async function runScrapeJob(db, trackId, runId) {
   const resumeText = getResumeText(trackId);
 
   for (const job of newJobs) {
-    if (resumeText && job.description) {
-      const result = await analyze(resumeText, job.description);
-      db.prepare(`
-        UPDATE jobs SET
-          match_score = ?, match_tier = ?,
-          strengths = ?, gaps = ?, key_requirements = ?,
-          apply_recommendation = ?, one_line_pitch = ?,
-          analyzed_at = datetime('now')
-        WHERE apply_url = ?
-      `).run(
-        result.match_score, result.match_tier,
-        JSON.stringify(result.strengths),
-        JSON.stringify(result.gaps),
-        JSON.stringify(result.key_requirements),
-        result.apply_recommendation ? 1 : 0,
-        result.one_line_pitch,
-        job.apply_url
-      );
+    if (resumeText) {
+      // Build job context from whatever fields are available; description may be empty on some scrapers
+      const jobContext = [
+        job.title,
+        job.company && `Company: ${job.company}`,
+        job.location && `Location: ${job.location}`,
+        job.description,
+      ].filter(Boolean).join('\n');
+
+      try {
+        const result = await analyze(resumeText, jobContext);
+        db.prepare(`
+          UPDATE jobs SET
+            match_score = ?, match_tier = ?,
+            strengths = ?, gaps = ?, key_requirements = ?,
+            apply_recommendation = ?, one_line_pitch = ?,
+            analyzed_at = datetime('now')
+          WHERE apply_url = ?
+        `).run(
+          result.match_score, result.match_tier,
+          JSON.stringify(result.strengths),
+          JSON.stringify(result.gaps),
+          JSON.stringify(result.key_requirements),
+          result.apply_recommendation ? 1 : 0,
+          result.one_line_pitch,
+          job.apply_url
+        );
+      } catch (err) {
+        console.error(`[analyzer] Failed for "${job.title}": ${err.message}`);
+      }
     }
     jobsAnalyzed++;
     updateRun.run(jobsFound, jobsNew, jobsAnalyzed, runId);

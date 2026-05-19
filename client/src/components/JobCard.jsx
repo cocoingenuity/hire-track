@@ -47,10 +47,11 @@ export default function JobCard({ job, isSelected, onSelect, onStatusChange }) {
         )}
 
         <select
-          value={job.status}
+          value={job.status ?? ''}
           onChange={handleStatusChange}
           className="bg-gray-800 border border-gray-700 text-gray-300 text-xs rounded px-2 py-1 focus:outline-none"
         >
+          <option value="">—</option>
           {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
       </div>

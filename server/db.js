@@ -39,7 +39,7 @@ function getDb() {
       apply_recommendation INTEGER,
       one_line_pitch    TEXT,
       analyzed_at       TEXT,
-      status            TEXT DEFAULT 'Saved',
+      status            TEXT DEFAULT NULL,
       scraped_at        TEXT DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -55,6 +55,18 @@ function getDb() {
       finished_at    TEXT
     );
   `);
+
+  // Versioned migrations via SQLite user_version pragma
+  const ver = _db.pragma('user_version', { simple: true });
+  if (ver < 1) {
+    if (!isTest) {
+      // Remove fixture jobs that were inserted during dry-run testing
+      _db.prepare("DELETE FROM jobs WHERE source = 'fixture'").run();
+    }
+    // Reset auto-assigned 'Saved' status — only explicit user choices should have a status
+    _db.prepare("UPDATE jobs SET status = NULL WHERE status = 'Saved'").run();
+    _db.pragma('user_version = 1');
+  }
 
   return _db;
 }

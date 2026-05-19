@@ -36,7 +36,7 @@ async function scrape(track) {
               .$eval('[data-testid="text-location"]', el => el.textContent.trim())
               .catch(() => '');
             const dateText = await card
-              .$eval('.date, [class*="date"]', el => el.textContent.trim())
+              .$eval('[data-testid="myJobsStateDate"], span.date, .date, [class*="jobPostAge"]', el => el.textContent.trim())
               .catch(() => '');
             const description = await card
               .$eval('[class*="job-snippet"]', el => el.textContent.trim())
@@ -49,6 +49,9 @@ async function scrape(track) {
                 ? href
                 : `https://ca.indeed.com${href}`
               : '';
+
+            // Skip stale listings (30+ days old)
+            if (/30\+|\bmonth\b/i.test(dateText)) continue;
 
             if (title && applyUrl) {
               allJobs.push({

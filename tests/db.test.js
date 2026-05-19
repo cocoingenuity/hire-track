@@ -40,12 +40,12 @@ describe('database', () => {
     ).toThrow();
   });
 
-  test('job status defaults to Saved', () => {
+  test('job status defaults to null (unset)', () => {
     db.prepare('DELETE FROM jobs').run();
     db.prepare(
       "INSERT INTO jobs (track, title, company, apply_url) VALUES ('it-support', 'T', 'C', 'https://b.com')"
     ).run();
     const job = db.prepare("SELECT status FROM jobs WHERE apply_url = 'https://b.com'").get();
-    expect(job.status).toBe('Saved');
+    expect(job.status).toBeNull();
   });
 });

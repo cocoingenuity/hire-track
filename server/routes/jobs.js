@@ -33,11 +33,12 @@ router.patch('/:id/status', (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
 
-  if (!VALID_STATUSES.includes(status)) {
+  const finalStatus = (status === '' || status == null) ? null : status;
+  if (finalStatus !== null && !VALID_STATUSES.includes(finalStatus)) {
     return res.status(400).json({ error: `Invalid status. Must be one of: ${VALID_STATUSES.join(', ')}` });
   }
 
-  const result = db.prepare('UPDATE jobs SET status = ? WHERE id = ?').run(status, Number(id));
+  const result = db.prepare('UPDATE jobs SET status = ? WHERE id = ?').run(finalStatus, Number(id));
   if (result.changes === 0) {
     return res.status(404).json({ error: 'Job not found' });
   }
