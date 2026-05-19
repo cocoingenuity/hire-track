@@ -35,12 +35,29 @@ async function scrape(track) {
             const location = await card
               .$eval('[data-testid="text-location"]', el => el.textContent.trim())
               .catch(() => '');
-            const dateText = await card
-              .$eval('[data-testid="myJobsStateDate"], span.date, .date, [class*="jobPostAge"]', el => el.textContent.trim())
-              .catch(() => '');
-            const description = await card
-              .$eval('[class*="job-snippet"]', el => el.textContent.trim())
-              .catch(() => '');
+            const dateText = await card.evaluate(el => {
+              // Try dedicated date selectors first, then scan all text for a date pattern
+              const selectors = ['[data-testid*="date"]', 'span.date', '[class*="date"]', '[class*="Date"]', '[class*="age"]'];
+              for (const sel of selectors) {
+                const found = el.querySelector(sel);
+                if (found && /ago|today|hour|day|week/i.test(found.textContent)) {
+                  return found.textContent.trim();
+                }
+              }
+              const m = el.textContent.match(/\b(\d+\s+(?:hour|day|week)s?\s+ago|[Tt]oday|[Jj]ust\s+[Pp]osted)\b/);
+              return m ? m[1] : '';
+            }).catch(() => '');
+
+            const description = await card.evaluate(el => {
+              for (const sel of ['[class*="snippet"]', '[class*="Snippet"]', '[class*="description"]', 'ul']) {
+                const found = el.querySelector(sel);
+                if (found) {
+                  const text = found.textContent.trim();
+                  if (text.length > 30) return text;
+                }
+              }
+              return '';
+            }).catch(() => '');
             const href = await card
               .$eval('h2.jobTitle a', el => el.getAttribute('href'))
               .catch(() => '');

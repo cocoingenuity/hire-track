@@ -1,3 +1,9 @@
+function formatScrapedAt(scraped_at) {
+  if (!scraped_at) return '';
+  const d = new Date(scraped_at.replace(' ', 'T') + 'Z');
+  return d.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' });
+}
+
 const TIER_STYLES = {
   'Strong Match': { badge: 'bg-green-900 text-green-300',   border: 'border-l-green-500',  score: 'bg-green-500 text-gray-950' },
   'Good Match':   { badge: 'bg-blue-900 text-blue-300',     border: 'border-l-blue-500',   score: 'bg-blue-500 text-gray-950' },
@@ -25,7 +31,7 @@ export default function JobCard({ job, isSelected, onSelect, onStatusChange }) {
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-sm truncate">{job.title}</p>
         <p className="text-gray-400 text-xs mt-0.5">
-          {job.company}{job.location ? ` · ${job.location}` : ''}{job.date_posted ? ` · ${job.date_posted}` : ''}
+          {job.company}{job.location ? ` · ${job.location}` : ''}{(job.date_posted || job.scraped_at) ? ` · ${job.date_posted || formatScrapedAt(job.scraped_at)}` : ''}
         </p>
       </div>
 

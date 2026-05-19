@@ -15,7 +15,7 @@ router.get('/', (req, res) => {
   if (tier)   { sql += ' AND match_tier = ?';  params.push(tier); }
   if (status) { sql += ' AND status = ?';      params.push(status); }
 
-  sql += ' ORDER BY match_score DESC';
+  sql += ' ORDER BY scraped_at DESC, match_score DESC';
 
   const jobs = db.prepare(sql).all(...params).map(job => ({
     ...job,

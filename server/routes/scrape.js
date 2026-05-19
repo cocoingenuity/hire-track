@@ -65,9 +65,14 @@ async function runScrapeJob(db, trackId, runId) {
 
   const resumeText = getResumeText(trackId);
 
-  for (const job of newJobs) {
+  // Analyze every unanalyzed job for this track — includes newly inserted jobs AND any
+  // that failed analysis in a previous run (e.g. due to rate limiting).
+  const unanalyzed = db
+    .prepare('SELECT * FROM jobs WHERE track = ? AND analyzed_at IS NULL ORDER BY scraped_at DESC')
+    .all(trackId);
+
+  for (const job of unanalyzed) {
     if (resumeText) {
-      // Build job context from whatever fields are available; description may be empty on some scrapers
       const jobContext = [
         job.title,
         job.company && `Company: ${job.company}`,
@@ -83,7 +88,7 @@ async function runScrapeJob(db, trackId, runId) {
             strengths = ?, gaps = ?, key_requirements = ?,
             apply_recommendation = ?, one_line_pitch = ?,
             analyzed_at = datetime('now')
-          WHERE apply_url = ?
+          WHERE id = ?
         `).run(
           result.match_score, result.match_tier,
           JSON.stringify(result.strengths),
@@ -91,13 +96,13 @@ async function runScrapeJob(db, trackId, runId) {
           JSON.stringify(result.key_requirements),
           result.apply_recommendation ? 1 : 0,
           result.one_line_pitch,
-          job.apply_url
+          job.id
         );
+        jobsAnalyzed++;
       } catch (err) {
         console.error(`[analyzer] Failed for "${job.title}": ${err.message}`);
       }
     }
-    jobsAnalyzed++;
     updateRun.run(jobsFound, jobsNew, jobsAnalyzed, runId);
   }
 
