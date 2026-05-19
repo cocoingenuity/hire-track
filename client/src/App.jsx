@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import TrackTabs from './components/TrackTabs';
 import JobList from './components/JobList';
 import ScrapeProgress from './components/ScrapeProgress';
+import JobDetail from './components/JobDetail';
 
 export default function App() {
   const [tracks, setTracks] = useState([]);
@@ -90,6 +91,10 @@ export default function App() {
             onStatusChange={handleStatusChange}
           />
         </main>
+        <JobDetail
+          job={selectedJob}
+          onClose={() => setSelectedJob(null)}
+        />
       </div>
     </div>
   );
