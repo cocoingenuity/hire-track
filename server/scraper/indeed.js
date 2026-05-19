@@ -7,6 +7,8 @@ function parsePostedDate(text) {
   const t = text.toLowerCase().trim();
   const now = new Date();
 
+  if (/30\+/.test(t)) return null; // "30+ days ago" → too old to parse meaningfully
+
   if (/just posted|today/.test(t)) return now.toISOString().split('T')[0];
 
   const h = t.match(/(\d+)\s*hour/);
@@ -100,10 +102,8 @@ async function scrape(track) {
           try {
             if (!debuggedFirstCard) {
               debuggedFirstCard = true;
-              const rawText = await card.evaluate(el =>
-                (el.innerText || el.textContent || '').replace(/\s+/g, ' ').trim().substring(0, 400)
-              ).catch(() => '(error)');
-              console.log('[scraper] First card text:', rawText);
+              const rawHtml = await card.evaluate(el => el.outerHTML).catch(() => '(error)');
+              console.log('[scraper] First card HTML:', rawHtml);
             }
 
             const title = await card
@@ -116,10 +116,27 @@ async function scrape(track) {
               .$eval('[data-testid="text-location"]', el => el.textContent.trim())
               .catch(() => '');
 
-            // Extract date text from card — broadened pattern, no prefix required
+            // Extract date text from card — try specific selectors first, then full-text scan
             const cardDateText = await card.evaluate(el => {
+              const dateRe = /(\d+\+?\s*(?:hour|day|week)s?\s*ago|[Tt]oday|[Jj]ust\s+[Pp]osted)/i;
+              const dateSelectors = [
+                '[data-testid="myJobsStateDate"]',
+                '[data-testid="job-age"]',
+                '[data-testid*="date"]',
+                '[class*="date"]',
+                '[class*="Date"]',
+                '[class*="age"]',
+                'time',
+              ];
+              for (const sel of dateSelectors) {
+                for (const elem of el.querySelectorAll(sel)) {
+                  const t = (elem.innerText || elem.textContent || '').trim();
+                  const m = t.match(dateRe);
+                  if (m) return m[0].trim();
+                }
+              }
               const text = el.innerText || el.textContent || '';
-              const m = text.match(/(\d+\s+(?:hour|day|week)s?\s+ago|[Tt]oday|[Jj]ust\s+[Pp]osted)/i);
+              const m = text.match(dateRe);
               return m ? m[0].trim() : '';
             }).catch(() => '');
 
