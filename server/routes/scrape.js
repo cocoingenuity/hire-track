@@ -1,3 +1,110 @@
 const express = require('express');
 const router = express.Router();
+const { getDb } = require('../db');
+const { scrape } = require('../scraper');
+const { analyze } = require('../analyzer');
+const { getResumeText } = require('../resumes');
+
+router.post('/:track', (req, res) => {
+  const db = getDb();
+  const { track } = req.params;
+
+  const existing = db
+    .prepare("SELECT id FROM scrape_runs WHERE track = ? AND status = 'running'")
+    .get(track);
+
+  if (existing) {
+    return res.json({ run_id: existing.id });
+  }
+
+  const { lastInsertRowid: runId } = db
+    .prepare("INSERT INTO scrape_runs (track, status) VALUES (?, 'running')")
+    .run(track);
+
+  runScrapeJob(db, track, runId).catch(err => {
+    db.prepare(
+      "UPDATE scrape_runs SET status = 'error', error_msg = ?, finished_at = datetime('now') WHERE id = ?"
+    ).run(err.message, runId);
+  });
+
+  res.json({ run_id: runId });
+});
+
+async function runScrapeJob(db, trackId, runId) {
+  const updateRun = db.prepare(
+    'UPDATE scrape_runs SET jobs_found = ?, jobs_new = ?, jobs_analyzed = ? WHERE id = ?'
+  );
+
+  let jobsFound = 0;
+  let jobsNew = 0;
+  let jobsAnalyzed = 0;
+  const newJobs = [];
+
+  const rawJobs = await scrape(trackId);
+
+  for (const job of rawJobs) {
+    jobsFound++;
+    try {
+      db.prepare(`
+        INSERT INTO jobs (track, title, company, location, date_posted, description, apply_url, source)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        trackId, job.title, job.company,
+        job.location || null, job.date_posted || null,
+        job.description || null, job.apply_url,
+        job.source || 'indeed'
+      );
+      jobsNew++;
+      newJobs.push(job);
+    } catch (err) {
+      if (!err.message.includes('UNIQUE constraint failed')) throw err;
+      // Duplicate — skip
+    }
+    updateRun.run(jobsFound, jobsNew, jobsAnalyzed, runId);
+  }
+
+  const resumeText = getResumeText(trackId);
+
+  for (const job of newJobs) {
+    if (resumeText && job.description) {
+      const result = await analyze(resumeText, job.description);
+      db.prepare(`
+        UPDATE jobs SET
+          match_score = ?, match_tier = ?,
+          strengths = ?, gaps = ?, key_requirements = ?,
+          apply_recommendation = ?, one_line_pitch = ?,
+          analyzed_at = datetime('now')
+        WHERE apply_url = ?
+      `).run(
+        result.match_score, result.match_tier,
+        JSON.stringify(result.strengths),
+        JSON.stringify(result.gaps),
+        JSON.stringify(result.key_requirements),
+        result.apply_recommendation ? 1 : 0,
+        result.one_line_pitch,
+        job.apply_url
+      );
+    }
+    jobsAnalyzed++;
+    updateRun.run(jobsFound, jobsNew, jobsAnalyzed, runId);
+  }
+
+  db.prepare(
+    "UPDATE scrape_runs SET status = 'done', finished_at = datetime('now') WHERE id = ?"
+  ).run(runId);
+}
+
+router.get('/status/:track', (req, res) => {
+  const db = getDb();
+  const { track } = req.params;
+
+  const run = db
+    .prepare('SELECT * FROM scrape_runs WHERE track = ? ORDER BY id DESC LIMIT 1')
+    .get(track);
+
+  if (!run) return res.json({ status: 'idle' });
+
+  res.json(run);
+});
+
 module.exports = router;
