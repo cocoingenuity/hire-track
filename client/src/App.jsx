@@ -82,6 +82,42 @@ export default function App() {
         onComplete={handleScrapeComplete}
       />
 
+      <div className="flex items-center gap-3 px-6 py-2 border-b border-gray-800 bg-gray-950 shrink-0">
+        <span className="text-gray-500 text-xs uppercase tracking-wide">Filter:</span>
+        <select
+          value={filters.tier}
+          onChange={e => setFilters(f => ({ ...f, tier: e.target.value }))}
+          className="bg-gray-800 border border-gray-700 text-gray-300 text-xs rounded px-2 py-1 focus:outline-none"
+        >
+          <option value="">All Tiers</option>
+          <option value="Strong Match">Strong Match</option>
+          <option value="Good Match">Good Match</option>
+          <option value="Stretch">Stretch</option>
+          <option value="Skip">Skip</option>
+        </select>
+        <select
+          value={filters.status}
+          onChange={e => setFilters(f => ({ ...f, status: e.target.value }))}
+          className="bg-gray-800 border border-gray-700 text-gray-300 text-xs rounded px-2 py-1 focus:outline-none"
+        >
+          <option value="">All Statuses</option>
+          <option value="Saved">Saved</option>
+          <option value="Applied">Applied</option>
+          <option value="Interview">Interview</option>
+          <option value="Offer">Offer</option>
+          <option value="Rejected">Rejected</option>
+        </select>
+        {(filters.tier || filters.status) && (
+          <button
+            onClick={() => setFilters({ tier: '', status: '' })}
+            className="text-xs text-gray-500 hover:text-gray-300"
+          >
+            Clear
+          </button>
+        )}
+        <span className="ml-auto text-xs text-gray-600">{jobs.length} jobs</span>
+      </div>
+
       <div className="flex flex-1 overflow-hidden">
         <main className="flex-1 px-6 py-4 overflow-auto">
           <JobList
