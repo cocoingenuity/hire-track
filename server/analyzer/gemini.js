@@ -41,6 +41,7 @@ Scoring: Strong Match = 80-100, Good Match = 60-79, Stretch = 40-59, Skip = 0-39
   try {
     const result = await model.generateContent(prompt);
     const text = result.response.text();
+    console.log(`[gemini] raw → ${text.substring(0, 300).replace(/\n/g, ' ')}`);
     const jsonStr = text.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
     const parsed = JSON.parse(jsonStr);
     console.log(`[gemini] SUCCESS → score=${parsed.match_score} tier="${parsed.match_tier}"`);

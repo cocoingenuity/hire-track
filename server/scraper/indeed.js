@@ -1,6 +1,65 @@
 const { chromium } = require('playwright');
 
-const DELAY = () => 2000 + Math.random() * 2000; // 2–4s random delay
+const DELAY = () => 2000 + Math.random() * 2000;
+
+function parsePostedDate(text) {
+  if (!text) return null;
+  const t = text.toLowerCase().trim();
+  const now = new Date();
+
+  if (/just posted|today/.test(t)) return now.toISOString().split('T')[0];
+
+  const h = t.match(/(\d+)\s*hour/);
+  if (h) return now.toISOString().split('T')[0];
+
+  const d = t.match(/(\d+)\s*day/);
+  if (d) {
+    const date = new Date(now);
+    date.setDate(date.getDate() - parseInt(d[1]));
+    return date.toISOString().split('T')[0];
+  }
+
+  const w = t.match(/(\d+)\s*week/);
+  if (w) {
+    const date = new Date(now);
+    date.setDate(date.getDate() - parseInt(w[1]) * 7);
+    return date.toISOString().split('T')[0];
+  }
+
+  return null;
+}
+
+async function getPostedDate(context, url) {
+  const page = await context.newPage();
+  try {
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 10000 });
+    await page.waitForTimeout(1500);
+    const raw = await page.evaluate(() => {
+      const selectors = [
+        '[data-testid="job-posted-date"]',
+        '[class*="jobPosted"]',
+        '[class*="postedDate"]',
+        '[class*="posted"]',
+        '[class*="date"]',
+      ];
+      for (const sel of selectors) {
+        const el = document.querySelector(sel);
+        if (el) {
+          const t = (el.innerText || el.textContent || '').trim();
+          if (t && /ago|today|posted|hour|day|week/i.test(t)) return t;
+        }
+      }
+      const body = document.body.innerText || '';
+      const m = body.match(/(?:active|posted)\s+(\d+\s+(?:hour|day|week)s?\s+ago|[Tt]oday|[Jj]ust\s+[Pp]osted)/i);
+      return m ? m[0].trim() : '';
+    }).catch(() => '');
+    return raw;
+  } catch {
+    return '';
+  } finally {
+    await page.close();
+  }
+}
 
 async function scrape(track) {
   const browser = await chromium.launch({ headless: true });
@@ -27,7 +86,6 @@ async function scrape(track) {
 
         for (const card of cards) {
           try {
-            // One-time dump of raw card text so we can tune selectors if needed
             if (!debuggedFirstCard) {
               debuggedFirstCard = true;
               const rawText = await card.evaluate(el =>
@@ -45,8 +103,9 @@ async function scrape(track) {
             const location = await card
               .$eval('[data-testid="text-location"]', el => el.textContent.trim())
               .catch(() => '');
-            const dateText = await card.evaluate(el => {
-              // Try dedicated date element selectors first
+
+            // Try card-level date extraction first (fast path)
+            const cardDateText = await card.evaluate(el => {
               const selectors = [
                 '[data-testid*="date"]', '[data-testid*="Date"]',
                 'span.date', '[class*="date"]', '[class*="Date"]',
@@ -59,12 +118,13 @@ async function scrape(track) {
                   if (t && /ago|today|posted|hour|day|week/i.test(t)) return t;
                 }
               }
-              // Fallback: scan visible lines for any time-relative string
-              // Covers "Active 2 days ago", "Posted 1 day ago", "Just posted", "Today", etc.
               const visibleText = (el.innerText || el.textContent || '');
               const m = visibleText.match(/(?:active|posted)?\s*(\d+\s+(?:hour|day|week)s?\s+ago|[Tt]oday|[Jj]ust\s+[Pp]osted)/i);
               return m ? m[0].trim() : '';
             }).catch(() => '');
+
+            // Skip stale listings (30+ days old)
+            if (/30\+|\bmonth\b/i.test(cardDateText)) continue;
 
             const description = await card.evaluate(el => {
               for (const sel of ['[class*="snippet"]', '[class*="Snippet"]', '[class*="description"]', 'ul']) {
@@ -76,29 +136,25 @@ async function scrape(track) {
               }
               return '';
             }).catch(() => '');
+
             const href = await card
               .$eval('h2.jobTitle a', el => el.getAttribute('href'))
               .catch(() => '');
             const applyUrl = href
-              ? href.startsWith('http')
-                ? href
-                : `https://ca.indeed.com${href}`
+              ? href.startsWith('http') ? href : `https://ca.indeed.com${href}`
               : '';
 
-            // Skip stale listings (30+ days old)
-            if (/30\+|\bmonth\b/i.test(dateText)) continue;
+            if (!title || !applyUrl) continue;
 
-            if (title && applyUrl) {
-              allJobs.push({
-                title,
-                company,
-                location,
-                date_posted: dateText,
-                description,
-                apply_url: applyUrl,
-                source: 'indeed'
-              });
+            // Parse card date; if missing, visit the job detail page
+            let date_posted = parsePostedDate(cardDateText);
+            if (!date_posted) {
+              const detailDateText = await getPostedDate(context, applyUrl);
+              date_posted = parsePostedDate(detailDateText);
+              console.log(`[scraper] detail date "${title.substring(0, 40)}": "${detailDateText}" → ${date_posted}`);
             }
+
+            allJobs.push({ title, company, location, date_posted, description, apply_url: applyUrl, source: 'indeed' });
           } catch {
             // Skip malformed cards
           }
