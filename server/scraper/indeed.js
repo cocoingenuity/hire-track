@@ -10,6 +10,7 @@ async function scrape(track) {
   });
   const page = await context.newPage();
   const allJobs = [];
+  let debuggedFirstCard = false;
 
   try {
     for (const query of track.queries) {
@@ -26,6 +27,15 @@ async function scrape(track) {
 
         for (const card of cards) {
           try {
+            // One-time dump of raw card text so we can tune selectors if needed
+            if (!debuggedFirstCard) {
+              debuggedFirstCard = true;
+              const rawText = await card.evaluate(el =>
+                (el.innerText || el.textContent || '').replace(/\s+/g, ' ').trim().substring(0, 400)
+              ).catch(() => '(error)');
+              console.log('[scraper] First card text:', rawText);
+            }
+
             const title = await card
               .$eval('h2.jobTitle span', el => el.textContent.trim())
               .catch(() => '');
@@ -36,16 +46,24 @@ async function scrape(track) {
               .$eval('[data-testid="text-location"]', el => el.textContent.trim())
               .catch(() => '');
             const dateText = await card.evaluate(el => {
-              // Try dedicated date selectors first, then scan all text for a date pattern
-              const selectors = ['[data-testid*="date"]', 'span.date', '[class*="date"]', '[class*="Date"]', '[class*="age"]'];
+              // Try dedicated date element selectors first
+              const selectors = [
+                '[data-testid*="date"]', '[data-testid*="Date"]',
+                'span.date', '[class*="date"]', '[class*="Date"]',
+                '[class*="age"]', '[class*="Age"]', '[class*="posted"]', '[class*="Posted"]',
+              ];
               for (const sel of selectors) {
                 const found = el.querySelector(sel);
-                if (found && /ago|today|hour|day|week/i.test(found.textContent)) {
-                  return found.textContent.trim();
+                if (found) {
+                  const t = (found.innerText || found.textContent || '').trim();
+                  if (t && /ago|today|posted|hour|day|week/i.test(t)) return t;
                 }
               }
-              const m = el.textContent.match(/\b(\d+\s+(?:hour|day|week)s?\s+ago|[Tt]oday|[Jj]ust\s+[Pp]osted)\b/);
-              return m ? m[1] : '';
+              // Fallback: scan visible lines for any time-relative string
+              // Covers "Active 2 days ago", "Posted 1 day ago", "Just posted", "Today", etc.
+              const visibleText = (el.innerText || el.textContent || '');
+              const m = visibleText.match(/(?:active|posted)?\s*(\d+\s+(?:hour|day|week)s?\s+ago|[Tt]oday|[Jj]ust\s+[Pp]osted)/i);
+              return m ? m[0].trim() : '';
             }).catch(() => '');
 
             const description = await card.evaluate(el => {

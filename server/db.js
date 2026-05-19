@@ -68,6 +68,13 @@ function getDb() {
     _db.pragma('user_version = 1');
   }
 
+  // Every startup: abandon any scrape runs that were left in 'running' state by a
+  // previous server process (crash, restart, Ctrl-C). Without this, POST /scrape/:track
+  // returns the stale run ID and the frontend polls forever.
+  _db.prepare(
+    "UPDATE scrape_runs SET status = 'error', error_msg = 'Server restarted — run abandoned', finished_at = datetime('now') WHERE status = 'running'"
+  ).run();
+
   return _db;
 }
 

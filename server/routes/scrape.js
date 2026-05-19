@@ -64,12 +64,14 @@ async function runScrapeJob(db, trackId, runId) {
   }
 
   const resumeText = getResumeText(trackId);
+  console.log(`[scrape/${trackId}] resume: ${resumeText ? resumeText.length + ' chars' : 'MISSING — analysis will be skipped'}`);
 
   // Analyze every unanalyzed job for this track — includes newly inserted jobs AND any
   // that failed analysis in a previous run (e.g. due to rate limiting).
   const unanalyzed = db
     .prepare('SELECT * FROM jobs WHERE track = ? AND analyzed_at IS NULL ORDER BY scraped_at DESC')
     .all(trackId);
+  console.log(`[scrape/${trackId}] ${unanalyzed.length} jobs need analysis`);
 
   for (const job of unanalyzed) {
     if (resumeText) {
