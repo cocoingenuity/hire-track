@@ -31,61 +31,6 @@ function parsePostedDate(text) {
   return null;
 }
 
-let debuggedDetailPage = false;
-
-// Single-page date extraction from the job detail page.
-// Only called when the search results card contains no date text.
-async function getJobDateFromDetailPage(context, applyUrl, title) {
-  const page = await context.newPage();
-  try {
-    await page.goto(applyUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
-    await page.waitForTimeout(4000);
-
-    if (!debuggedDetailPage) {
-      debuggedDetailPage = true;
-      const snap = await page.evaluate(() => ({
-        title: document.title,
-        url: window.location.href,
-        text: (document.body?.innerText || '').replace(/\s+/g, ' ').trim().substring(0, 500),
-      })).catch(() => null);
-      console.log('[scraper] Detail page snapshot:', JSON.stringify(snap));
-    }
-
-    const dateText = await page.evaluate(() => {
-      const selectors = [
-        '[data-testid="job-age"]',
-        '[data-testid*="date"]',
-        '[class*="PostedDate"]',
-        '[class*="postedDate"]',
-        '[class*="datePosted"]',
-        '[class*="job-age"]',
-        'time',
-        '[class*="jobMetadata"] span',
-        '[class*="jobInfoItem"]',
-      ];
-      const dateRe = /(\d+\+?\s*(?:hour|day|week)s?\s*ago|today|just\s+posted)/i;
-      for (const sel of selectors) {
-        for (const el of document.querySelectorAll(sel)) {
-          const t = (el.innerText || el.textContent || '').trim();
-          const m = t.match(dateRe);
-          if (m) return m[0].trim();
-        }
-      }
-      // Broad body scan — job description prose won't contain "X days ago" patterns
-      const body = document.body ? (document.body.innerText || '') : '';
-      const m = body.match(/(\d+\+?\s*(?:hour|day|week)s?\s*ago|[Tt]oday|[Jj]ust\s+[Pp]osted)/i);
-      return m ? m[0].trim() : '';
-    }).catch(() => '');
-
-    if (dateText) console.log(`[scraper] detail page date for "${title.substring(0, 40)}": "${dateText}"`);
-    return dateText;
-  } catch (err) {
-    console.log(`[scraper] detail page error for "${title.substring(0, 40)}": ${err.message.substring(0, 60)}`);
-    return '';
-  } finally {
-    await page.close();
-  }
-}
 
 async function scrape(track) {
   const browser = await chromium.launch({ headless: true });
@@ -204,9 +149,10 @@ async function scrape(track) {
 
             if (!title || !applyUrl) continue;
 
-            // Primary: use date from card. Fallback: visit detail page once.
-            const dateRaw = cardDateText || await getJobDateFromDetailPage(context, applyUrl, title);
-            const date_posted = parsePostedDate(dateRaw);
+            // Indeed card-only date: "New" badge → today, otherwise unknown.
+            // Detail page fallback removed — indeed.com returns a Cloudflare challenge for
+            // viewjob URLs from headless browsers, so it never yields a date.
+            const date_posted = parsePostedDate(cardDateText);
             console.log(`[scraper] "${title.substring(0, 45)}" → "${dateRaw}" → ${date_posted}`);
 
             // 14-day freshness filter (fromage=14 already handles this at source)

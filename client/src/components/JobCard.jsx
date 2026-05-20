@@ -1,13 +1,7 @@
-function formatDisplayDate(date_posted, scraped_at) {
-  if (date_posted) {
-    // YYYY-MM-DD stored by scraper
-    const [y, m, d] = date_posted.split('-').map(Number);
-    return new Date(y, m - 1, d).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' });
-  }
-  if (scraped_at) {
-    return new Date(scraped_at.replace(' ', 'T') + 'Z').toLocaleDateString('en-CA', { month: 'short', day: 'numeric' });
-  }
-  return '';
+function formatDisplayDate(date_posted) {
+  if (!date_posted) return '';
+  const [y, m, d] = date_posted.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' });
 }
 
 const TIER_STYLES = {
@@ -38,7 +32,7 @@ export default function JobCard({ job, isSelected, onSelect, onStatusChange }) {
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-sm truncate">{job.title}</p>
         <p className="text-gray-400 text-xs mt-0.5">
-          {job.company}{job.location ? ` · ${job.location}` : ''}{(job.date_posted || job.scraped_at) ? ` · ${formatDisplayDate(job.date_posted, job.scraped_at)}` : ''}
+          {job.company}{job.location ? ` · ${job.location}` : ''}{job.date_posted ? ` · ${formatDisplayDate(job.date_posted)}` : ''}
         </p>
       </div>
 
