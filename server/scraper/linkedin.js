@@ -71,6 +71,17 @@ async function scrape(track) {
             if (seen.has(applyUrl)) continue;
             seen.add(applyUrl);
 
+            const description = await card.evaluate(el => {
+              for (const sel of ['.job-search-card__snippet', '[class*="snippet"]', '[class*="description"]']) {
+                const found = el.querySelector(sel);
+                if (found) {
+                  const text = found.textContent.trim();
+                  if (text.length > 20) return text;
+                }
+              }
+              return '';
+            }).catch(() => '');
+
             console.log(`[linkedin] "${title.substring(0, 45)}" → ${date_posted}`);
 
             allJobs.push({
@@ -78,7 +89,7 @@ async function scrape(track) {
               company,
               location,
               date_posted,
-              description: '',
+              description,
               apply_url: applyUrl,
               source: 'linkedin',
             });

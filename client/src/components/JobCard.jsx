@@ -1,5 +1,5 @@
 function formatDisplayDate(date_posted) {
-  if (!date_posted) return 'Posted within 7 days';
+  if (!date_posted) return '';
   const [y, m, d] = date_posted.split('-').map(Number);
   return new Date(y, m - 1, d).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' });
 }
@@ -16,6 +16,9 @@ const STATUSES = ['Saved', 'Applied', 'Interview', 'Offer', 'Rejected'];
 
 export default function JobCard({ job, isSelected, onSelect, onStatusChange }) {
   const tier = TIER_STYLES[job.match_tier] || TIER_STYLES['Skip'];
+  const dateLabel = job.date_posted
+    ? formatDisplayDate(job.date_posted)
+    : job.source === 'indeed' ? 'Posted within 7 days' : '';
 
   function handleStatusChange(e) {
     e.stopPropagation();
@@ -32,7 +35,7 @@ export default function JobCard({ job, isSelected, onSelect, onStatusChange }) {
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-sm truncate">{job.title}</p>
         <p className="text-gray-400 text-xs mt-0.5">
-          {job.company}{job.location ? ` · ${job.location}` : ''} · {formatDisplayDate(job.date_posted)}
+          {job.company}{job.location ? ` · ${job.location}` : ''}{dateLabel ? ` · ${dateLabel}` : ''}
         </p>
       </div>
 
