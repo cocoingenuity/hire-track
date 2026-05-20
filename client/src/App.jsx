@@ -36,6 +36,14 @@ export default function App() {
     if (activeTrack) loadJobs(activeTrack, filters);
   }, [activeTrack, filters]);
 
+  // Refresh job list every 3 s while a scrape/analysis run is in progress so
+  // scores appear on cards as each job is analyzed, not just at completion.
+  useEffect(() => {
+    if (!isRefreshing || !activeTrack) return;
+    const id = setInterval(() => loadJobs(activeTrack, filters), 3000);
+    return () => clearInterval(id);
+  }, [isRefreshing, activeTrack, filters]);
+
   function handleRefresh() {
     if (!activeTrack || isRefreshing) return;
     setIsRefreshing(true);

@@ -9,22 +9,19 @@ async function scrape(trackId) {
     return (fixtures[trackId] || []).map(job => ({ ...job, source: 'fixture' }));
   }
 
-  // Run both scrapers sequentially; merge results (DB UNIQUE on apply_url handles dedup)
+  // Run scrapers sequentially — each launches a Chromium instance; concurrent launches
+  // double peak RAM and defeat the per-scraper rate-limit delays.
   const { scrape: scrapeIndeed } = require('./indeed');
   const { scrape: scrapeLinkedIn } = require('./linkedin');
 
-  const [indeedJobs, linkedInJobs] = await Promise.allSettled([
-    scrapeIndeed(track),
-    scrapeLinkedIn(track),
-  ]).then(results =>
-    results.map((r, i) => {
-      if (r.status === 'rejected') {
-        console.error(`[scraper] ${i === 0 ? 'indeed' : 'linkedin'} failed: ${r.reason?.message}`);
-        return [];
-      }
-      return r.value;
-    })
-  );
+  let indeedJobs = [];
+  let linkedInJobs = [];
+
+  try { indeedJobs = await scrapeIndeed(track); }
+  catch (err) { console.error(`[scraper] indeed failed: ${err.message}`); }
+
+  try { linkedInJobs = await scrapeLinkedIn(track); }
+  catch (err) { console.error(`[scraper] linkedin failed: ${err.message}`); }
 
   console.log(`[scraper] indeed=${indeedJobs.length} linkedin=${linkedInJobs.length}`);
   return [...indeedJobs, ...linkedInJobs];
