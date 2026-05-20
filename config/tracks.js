@@ -27,9 +27,13 @@ module.exports = [
     emoji: '🍎',
     resume: './resumes/retail.pdf',
     queries: [
+      'Apple Store Ottawa',
       'Apple Specialist Ottawa',
-      'Mobile Advisor Ottawa',
-      'Retail Sales Advisor Ottawa'
+      'Microsoft Store Ottawa',
+      'Samsung Experience Store Ottawa',
+      'Dyson Ottawa',
+      'Sony Store Ottawa',
+      'Google Ottawa'
     ]
   }
 ];
