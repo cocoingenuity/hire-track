@@ -37,16 +37,27 @@ export default function App() {
     return () => clearInterval(id);
   }, [isRefreshing, activeTrack]);
 
-  // Client-side filtering
-  const filteredJobs = jobs.filter(job => {
-    if (filters.tier   && job.match_tier !== filters.tier)   return false;
-    if (filters.status && job.status     !== filters.status) return false;
-    if (filters.days) {
-      const cutoff = Date.now() - Number(filters.days) * DAY_MS;
-      if (!job.scraped_at || new Date(job.scraped_at + 'Z').getTime() < cutoff) return false;
+  // Client-side filtering + dedup by (title, company): keep highest match_score per pair
+  const filteredJobs = (() => {
+    const filtered = jobs.filter(job => {
+      if (filters.tier   && job.match_tier !== filters.tier)   return false;
+      if (filters.status && job.status     !== filters.status) return false;
+      if (filters.days) {
+        const cutoff = Date.now() - Number(filters.days) * DAY_MS;
+        if (!job.scraped_at || new Date(job.scraped_at + 'Z').getTime() < cutoff) return false;
+      }
+      return true;
+    });
+    const seen = new Map();
+    for (const job of filtered) {
+      const key = `${job.title}||${job.company}`;
+      const existing = seen.get(key);
+      if (!existing || (job.match_score ?? -1) > (existing.match_score ?? -1)) {
+        seen.set(key, job);
+      }
     }
-    return true;
-  });
+    return [...seen.values()];
+  })();
 
   // Sidebar counts always from the full unfiltered list
   const cutoff7  = Date.now() - 7  * DAY_MS;
