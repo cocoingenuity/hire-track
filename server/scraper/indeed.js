@@ -45,10 +45,10 @@ async function scrape(track) {
   try {
     for (const query of track.queries) {
       for (let pageNum = 0; pageNum < 3; pageNum++) {
-        // fromage=14 filters to last 14 days at the source; belt+suspenders with the in-code filter below
+        // fromage=7 filters to last 7 days at the source; belt+suspenders with the in-code filter below
         const url =
           `https://ca.indeed.com/jobs?q=${encodeURIComponent(query)}` +
-          `&l=Ottawa%2C+ON&fromage=14&start=${pageNum * 10}`;
+          `&l=Ottawa%2C+ON&fromage=7&start=${pageNum * 10}`;
 
         await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15000 });
         await page.waitForTimeout(DELAY());
@@ -155,10 +155,10 @@ async function scrape(track) {
             const date_posted = parsePostedDate(cardDateText);
             console.log(`[scraper] "${title.substring(0, 45)}" → "${cardDateText}" → ${date_posted}`);
 
-            // 14-day freshness filter (fromage=14 already handles this at source)
+            // 7-day freshness filter (fromage=7 already handles this at source)
             if (date_posted) {
               const ageDays = (Date.now() - new Date(date_posted).getTime()) / 86400000;
-              if (ageDays > 14) {
+              if (ageDays > 7) {
                 console.log(`[scraper] skip stale (${Math.round(ageDays)}d old)`);
                 continue;
               }

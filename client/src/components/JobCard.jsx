@@ -1,5 +1,5 @@
 function formatDisplayDate(date_posted) {
-  if (!date_posted) return '';
+  if (!date_posted) return 'Posted within 7 days';
   const [y, m, d] = date_posted.split('-').map(Number);
   return new Date(y, m - 1, d).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' });
 }
@@ -32,7 +32,7 @@ export default function JobCard({ job, isSelected, onSelect, onStatusChange }) {
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-sm truncate">{job.title}</p>
         <p className="text-gray-400 text-xs mt-0.5">
-          {job.company}{job.location ? ` · ${job.location}` : ''}{job.date_posted ? ` · ${formatDisplayDate(job.date_posted)}` : ''}
+          {job.company}{job.location ? ` · ${job.location}` : ''} · {formatDisplayDate(job.date_posted)}
         </p>
       </div>
 

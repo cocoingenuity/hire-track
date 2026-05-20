@@ -9,9 +9,25 @@ async function scrape(trackId) {
     return (fixtures[trackId] || []).map(job => ({ ...job, source: 'fixture' }));
   }
 
-  const provider = process.env.SCRAPER_SOURCE || 'indeed';
-  const { scrape: providerScrape } = require(`./${provider}`);
-  return providerScrape(track);
+  // Run both scrapers sequentially; merge results (DB UNIQUE on apply_url handles dedup)
+  const { scrape: scrapeIndeed } = require('./indeed');
+  const { scrape: scrapeLinkedIn } = require('./linkedin');
+
+  const [indeedJobs, linkedInJobs] = await Promise.allSettled([
+    scrapeIndeed(track),
+    scrapeLinkedIn(track),
+  ]).then(results =>
+    results.map((r, i) => {
+      if (r.status === 'rejected') {
+        console.error(`[scraper] ${i === 0 ? 'indeed' : 'linkedin'} failed: ${r.reason?.message}`);
+        return [];
+      }
+      return r.value;
+    })
+  );
+
+  console.log(`[scraper] indeed=${indeedJobs.length} linkedin=${linkedInJobs.length}`);
+  return [...indeedJobs, ...linkedInJobs];
 }
 
 module.exports = { scrape };
