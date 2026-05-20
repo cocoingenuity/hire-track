@@ -143,11 +143,12 @@ async function scrape(track) {
               ? href.startsWith('http') ? href : `https://ca.indeed.com${href}`
               : '';
             const jkMatch = rawUrl.match(/[?&]jk=([^&]+)/);
-            const applyUrl = jkMatch
-              ? `https://ca.indeed.com/viewjob?jk=${jkMatch[1]}`
-              : rawUrl;
+            // Skip sponsored/pagead cards — their URLs contain rotating tracking tokens
+            // with no stable jk= key, causing a new DB row on every scrape.
+            if (!jkMatch) continue;
+            const applyUrl = `https://ca.indeed.com/viewjob?jk=${jkMatch[1]}`;
 
-            if (!title || !applyUrl) continue;
+            if (!title) continue;
 
             // Indeed card-only date: "New" badge → today, otherwise unknown.
             // Detail page fallback removed — indeed.com returns a Cloudflare challenge for
