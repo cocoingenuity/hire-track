@@ -7,7 +7,15 @@ module.exports = [
     queries: [
       'IT Support Specialist Ottawa',
       'Helpdesk Analyst Ottawa',
-      'Technical Support Ottawa'
+      'Technical Support Ottawa',
+      'Systems Administrator Ottawa',
+      'Desktop Support Technician Ottawa',
+      'IT Technician Ottawa',
+      'Network Support Technician Ottawa',
+      'Service Desk Analyst Ottawa',
+      'End User Support Ottawa',
+      'IT Field Technician Ottawa',
+      'Computer Technician Ottawa'
     ]
   },
   {

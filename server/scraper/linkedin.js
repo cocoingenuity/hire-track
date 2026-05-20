@@ -2,8 +2,8 @@ const { chromium } = require('playwright');
 
 const DELAY = () => 3000 + Math.random() * 3000;
 
-// f_TPR=r604800 → past 7 days (604800 seconds)
-const TIME_FILTER = 'r604800';
+// f_TPR=r259200 → past 3 days (259200 seconds)
+const TIME_FILTER = 'r259200';
 
 async function scrape(track) {
   const browser = await chromium.launch({ headless: true });
