@@ -1,69 +1,58 @@
-function formatDisplayDate(date_posted) {
+function formatDate(date_posted) {
   if (!date_posted) return '';
   const [y, m, d] = date_posted.split('-').map(Number);
   return new Date(y, m - 1, d).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' });
 }
 
-const TIER_STYLES = {
-  'Strong Match': { badge: 'bg-green-900 text-green-300',   border: 'border-l-green-500',  score: 'bg-green-500 text-gray-950' },
-  'Good Match':   { badge: 'bg-blue-900 text-blue-300',     border: 'border-l-blue-500',   score: 'bg-blue-500 text-gray-950' },
-  'Stretch':      { badge: 'bg-yellow-900 text-yellow-300', border: 'border-l-yellow-500', score: 'bg-yellow-400 text-gray-950' },
-  'Skip':         { badge: 'bg-gray-800 text-gray-400',     border: 'border-l-gray-600',   score: 'bg-gray-600 text-gray-200' },
+const BADGE = {
+  'Strong Match': { cls: 'ht-badge-strong', label: 'Strong',  scoreCls: 'ht-score-high' },
+  'Good Match':   { cls: 'ht-badge-good',   label: 'Good',    scoreCls: 'ht-score-mid' },
+  'Stretch':      { cls: 'ht-badge-stretch',label: 'Stretch', scoreCls: 'ht-score-low' },
+  'Skip':         { cls: 'ht-badge-skip',   label: 'Skip',    scoreCls: 'ht-score-empty' },
 };
 
-
-const STATUSES = ['Saved', 'Applied', 'Interview', 'Offer', 'Rejected'];
-
 export default function JobCard({ job, isSelected, onSelect, onStatusChange }) {
-  const tier = TIER_STYLES[job.match_tier] || TIER_STYLES['Skip'];
+  const cfg = BADGE[job.match_tier] || { cls: 'ht-badge-skip', label: '—', scoreCls: 'ht-score-empty' };
   const dateLabel = job.date_posted
-    ? formatDisplayDate(job.date_posted)
-    : job.source === 'indeed' ? 'Posted within 7 days' : '';
+    ? formatDate(job.date_posted)
+    : job.source === 'indeed' ? 'Within 7 days' : '';
 
-  function handleStatusChange(e) {
+  function handleBookmark(e) {
     e.stopPropagation();
-    onStatusChange(job.id, e.target.value);
+    onStatusChange(job.id, job.status === 'Saved' ? '' : 'Saved');
   }
 
   return (
     <div
       onClick={() => onSelect(job)}
-      className={`flex items-center gap-4 px-4 py-3 rounded-lg border-l-4 cursor-pointer transition-colors ${tier.border} ${
-        isSelected ? 'bg-gray-800' : 'bg-gray-900 hover:bg-gray-800'
-      }`}
+      className={`ht-job-card${isSelected ? ' selected' : ''}`}
     >
-      <div className="flex-1 min-w-0">
-        <p className="font-semibold text-sm truncate">{job.title}</p>
-        <p className="text-gray-400 text-xs mt-0.5">
-          {job.company}{job.location ? ` · ${job.location}` : ''}{dateLabel ? ` · ${dateLabel}` : ''}
-        </p>
+      <div className="ht-job-card-left">
+        <div className="ht-job-title">{job.title}</div>
+        <div className="ht-job-meta">
+          <span>{job.company}</span>
+          {job.location && (
+            <><span className="ht-meta-dot" /><span>{job.location}</span></>
+          )}
+          {dateLabel && (
+            <><span className="ht-meta-dot" /><span>{dateLabel}</span></>
+          )}
+        </div>
       </div>
-
-      <div className="flex items-center gap-3 shrink-0">
+      <div className="ht-job-card-right">
         {job.match_tier && (
-          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${tier.badge}`}>
-            {job.match_tier}
-          </span>
+          <span className={`ht-badge ${cfg.cls}`}>{cfg.label}</span>
         )}
-
-        {job.match_score != null ? (
-          <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${tier.score}`}>
-            {job.match_score}
-          </div>
-        ) : (
-          <div className="w-9 h-9 rounded-full flex items-center justify-center text-xs text-gray-600 border border-gray-700 shrink-0">
-            —
-          </div>
-        )}
-
-        <select
-          value={job.status ?? ''}
-          onChange={handleStatusChange}
-          className="bg-gray-800 border border-gray-700 text-gray-300 text-xs rounded px-2 py-1 focus:outline-none"
+        <div className={`ht-score ${job.match_score != null ? cfg.scoreCls : 'ht-score-empty'}`}>
+          {job.match_score ?? '—'}
+        </div>
+        <button
+          onClick={handleBookmark}
+          className={`ht-bookmark-btn${job.status === 'Saved' ? ' saved' : ''}`}
+          title={job.status === 'Saved' ? 'Remove from saved' : 'Save job'}
         >
-          <option value="">—</option>
-          {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
-        </select>
+          <i className="ti ti-bookmark" />
+        </button>
       </div>
     </div>
   );

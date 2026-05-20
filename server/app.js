@@ -24,5 +24,6 @@ if (process.env.NODE_ENV !== 'test') {
 app.use('/api/tracks', require('./routes/tracks'));
 app.use('/api/jobs', require('./routes/jobs'));
 app.use('/api/scrape', require('./routes/scrape'));
+app.use('/api/analyze', require('./routes/analyze'));
 
 module.exports = app;

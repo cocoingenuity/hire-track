@@ -38,14 +38,14 @@ async function runScrapeJob(db, trackId, runId) {
   let jobsFound = 0;
   let jobsNew = 0;
   let jobsAnalyzed = 0;
-  const newJobs = [];
+  const newJobIds = [];
 
   const rawJobs = await scrape(trackId);
 
   for (const job of rawJobs) {
     jobsFound++;
     try {
-      db.prepare(`
+      const { lastInsertRowid } = db.prepare(`
         INSERT INTO jobs (track, title, company, location, date_posted, description, apply_url, source, status)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL)
       `).run(
@@ -55,7 +55,7 @@ async function runScrapeJob(db, trackId, runId) {
         job.source || 'indeed'
       );
       jobsNew++;
-      newJobs.push(job);
+      newJobIds.push(lastInsertRowid);
     } catch (err) {
       if (!err.message.includes('UNIQUE constraint failed')) throw err;
       // Duplicate — skip
@@ -66,12 +66,14 @@ async function runScrapeJob(db, trackId, runId) {
   const resumeText = getResumeText(trackId);
   console.log(`[scrape/${trackId}] resume: ${resumeText ? resumeText.length + ' chars' : 'MISSING — analysis will be skipped'}`);
 
-  // Analyze every unanalyzed job for this track — includes newly inserted jobs AND any
-  // that failed analysis in a previous run (e.g. due to rate limiting).
-  const unanalyzed = db
-    .prepare('SELECT * FROM jobs WHERE track = ? AND analyzed_at IS NULL ORDER BY scraped_at DESC')
-    .all(trackId);
-  console.log(`[scrape/${trackId}] ${unanalyzed.length} jobs need analysis`);
+  // Only analyze jobs inserted in this run — existing jobs with no match_score
+  // are processed by POST /api/analyze/:track (the backlog endpoint).
+  const unanalyzed = newJobIds.length > 0
+    ? db.prepare(
+        `SELECT * FROM jobs WHERE id IN (${newJobIds.map(() => '?').join(',')}) ORDER BY id DESC`
+      ).all(...newJobIds)
+    : [];
+  console.log(`[scrape/${trackId}] ${unanalyzed.length} new jobs to analyze`);
 
   for (const job of unanalyzed) {
     if (resumeText) {

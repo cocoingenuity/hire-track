@@ -1,4 +1,4 @@
-export default function TrackTabs({ tracks, activeTrack, onSelect, onRefresh, isRefreshing }) {
+export default function TrackTabs({ tracks, activeTrack, onSelect, onRefresh, onAnalyze, isRefreshing }) {
   return (
     <div className="flex items-center gap-1 border-b border-gray-800 px-6">
       {tracks.map(track => (
@@ -15,7 +15,15 @@ export default function TrackTabs({ tracks, activeTrack, onSelect, onRefresh, is
           <span>{track.label}</span>
         </button>
       ))}
-      <div className="ml-auto">
+      <div className="ml-auto flex items-center gap-2">
+        <button
+          onClick={onAnalyze}
+          disabled={isRefreshing}
+          className="flex items-center gap-2 px-3 py-2 rounded-md text-sm bg-gray-800 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          <span>⚡</span>
+          <span>{isRefreshing ? 'Analyzing...' : 'Analyze'}</span>
+        </button>
         <button
           onClick={onRefresh}
           disabled={isRefreshing}

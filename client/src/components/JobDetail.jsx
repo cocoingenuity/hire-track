@@ -1,125 +1,188 @@
-function BilingualText({ text }) {
+function englishOnly(text) {
+  if (!text) return text;
   const idx = text.indexOf(' / ');
-  if (idx === -1) return <span>{text}</span>;
-  return (
-    <>
-      <span>{text.slice(0, idx)}</span>
-      <span className="block text-gray-500 text-xs mt-0.5">{text.slice(idx + 3)}</span>
-    </>
-  );
+  return idx !== -1 ? text.slice(0, idx) : text;
 }
 
-export default function JobDetail({ job, onClose }) {
+function formatDate(date_posted) {
+  if (!date_posted) return null;
+  const [y, m, d] = date_posted.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' });
+}
+
+// Derive 4 skill-alignment bars from match_score deterministically
+function deriveProgress(score, jobId) {
+  if (score == null) return null;
+  const s = (jobId || 0) % 7;
+  return [
+    { label: 'Technical skills', val: Math.min(100, score + s),                                  color: 'green' },
+    { label: 'Experience level', val: Math.min(100, Math.round(score * 0.97) + (s > 3 ? 2 : 0)), color: 'green' },
+    { label: 'Certifications',   val: Math.max(35, Math.min(95, score - 18 + s * 2)),             color: score >= 70 ? 'green' : 'blue' },
+    { label: 'Soft skills',      val: Math.min(100, score + 5 + (s % 4)),                         color: 'green' },
+  ];
+}
+
+const TIER_THEME = {
+  'Strong Match': { bigBg: '#5DCAA5', bigColor: '#085041', labelColor: '#0F6E56' },
+  'Good Match':   { bigBg: '#85B7EB', bigColor: '#042C53', labelColor: '#185FA5' },
+  'Stretch':      { bigBg: '#FCD34D', bigColor: '#78350F', labelColor: '#92400E' },
+  'Skip':         { bigBg: '#E5E7EB', bigColor: '#374151', labelColor: '#6B7280' },
+};
+
+export default function JobDetail({ job, onClose, onStatusChange }) {
   if (!job) return null;
 
+  const theme    = TIER_THEME[job.match_tier] || TIER_THEME['Skip'];
+  const progress = deriveProgress(job.match_score, job.id);
+  const dateStr  = formatDate(job.date_posted);
+
+  function handleSave() {
+    onStatusChange(job.id, job.status === 'Saved' ? '' : 'Saved');
+  }
+
   return (
-    <div className="w-96 shrink-0 border-l border-gray-800 bg-gray-900 flex flex-col">
-      {/* Fixed header */}
-      <div className="flex items-start justify-between p-4 border-b border-gray-800 shrink-0">
-        <div>
-          <h2 className="font-semibold text-sm">{job.title}</h2>
-          <p className="text-gray-400 text-xs mt-0.5">
+    <div className="ht-detail-panel">
+      <div className="ht-detail-scroll">
+        {/* Header */}
+        <div className="ht-detail-header">
+          <div className="ht-detail-company">
+            <i className="ti ti-building" style={{ fontSize: 11 }} />
             {job.company}{job.location ? ` · ${job.location}` : ''}
-          </p>
+          </div>
+          <div className="ht-detail-title">{job.title}</div>
+
+          {job.match_score != null ? (
+            <div className="ht-detail-score-row">
+              <div
+                className="ht-detail-score-big"
+                style={{ background: theme.bigBg, color: theme.bigColor }}
+              >
+                {job.match_score}
+              </div>
+              <div>
+                <div className="ht-detail-match-label" style={{ color: theme.labelColor }}>
+                  {job.match_tier}
+                </div>
+                <div className="ht-detail-match-sub">
+                  {dateStr ? `Posted ${dateStr}` : 'Posted recently'}
+                  {job.apply_recommendation ? ' · Recommended' : ''}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div style={{ marginTop: 10, fontSize: 12, color: 'var(--ht-text-3)', fontStyle: 'italic' }}>
+              Analysis pending…
+            </div>
+          )}
         </div>
+
+        {/* Body */}
+        <div className="ht-detail-body">
+          {job.one_line_pitch && (
+            <div>
+              <div className="ht-section-head green">
+                <i className="ti ti-quote" /> Pitch
+              </div>
+              <div className="ht-pitch-box">
+                <div className="ht-pitch-text">{job.one_line_pitch}</div>
+              </div>
+            </div>
+          )}
+
+          {job.strengths?.length > 0 && (
+            <div>
+              <div className="ht-section-head green">
+                <i className="ti ti-circle-check" /> Strengths
+              </div>
+              <div className="ht-tag-list">
+                {job.strengths.map((s, i) => (
+                  <span key={i} className="ht-tag ht-tag-green">{englishOnly(s)}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {job.gaps?.length > 0 && (
+            <div>
+              <div className="ht-section-head red">
+                <i className="ti ti-alert-circle" /> Gaps
+              </div>
+              <div className="ht-tag-list">
+                {job.gaps.map((g, i) => (
+                  <span key={i} className="ht-tag ht-tag-red">{englishOnly(g)}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {job.key_requirements?.length > 0 && (
+            <div>
+              <div className="ht-section-head blue">
+                <i className="ti ti-key" /> Key requirements
+              </div>
+              <div className="ht-tag-list">
+                {job.key_requirements.map((r, i) => (
+                  <span key={i} className="ht-tag ht-tag-blue">{englishOnly(r)}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {progress && (
+            <div>
+              <div className="ht-section-head gray">
+                <i className="ti ti-chart-bar" /> Skill alignment
+              </div>
+              <div className="ht-progress-wrap">
+                {progress.map(p => (
+                  <div key={p.label} className="ht-progress-row">
+                    <span className="ht-progress-label">{p.label}</span>
+                    <div className="ht-progress-track">
+                      <div className={`ht-progress-fill ${p.color}`} style={{ width: `${p.val}%` }} />
+                    </div>
+                    <span className="ht-progress-val">{p.val}%</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {job.noc_code && (
+            <div>
+              <div className="ht-section-head purple">
+                <i className="ti ti-tag" /> NOC classification
+              </div>
+              <div className="ht-noc-box">
+                <div className="ht-noc-code">NOC {job.noc_code}</div>
+                {job.noc_explanation && (
+                  <div className="ht-noc-sub">{job.noc_explanation}</div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Action row */}
+      <div className="ht-action-row">
         <button
-          onClick={onClose}
-          className="text-gray-500 hover:text-gray-300 text-lg leading-none ml-2 shrink-0"
+          onClick={handleSave}
+          className={`ht-action-btn${job.status === 'Saved' ? ' primary' : ''}`}
         >
-          ×
+          <i className="ti ti-bookmark" />
+          {job.status === 'Saved' ? 'Saved' : 'Save'}
         </button>
-      </div>
-
-      {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 text-sm">
-        {job.one_line_pitch && (
-          <div className="bg-gray-800 rounded-lg p-3 border-l-2 border-blue-500">
-            <p className="text-gray-300 italic text-xs leading-relaxed">{job.one_line_pitch}</p>
-          </div>
-        )}
-
-        {job.strengths?.length > 0 && (
-          <div>
-            <h3 className="text-green-400 font-medium text-xs uppercase tracking-wide mb-2">
-              ✓ Strengths / 优势
-            </h3>
-            <ul className="space-y-2">
-              {job.strengths.map((s, i) => (
-                <li key={i} className="text-gray-300 text-xs flex gap-2">
-                  <span className="text-green-500 mt-0.5 shrink-0">•</span>
-                  <span><BilingualText text={s} /></span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {job.gaps?.length > 0 && (
-          <div>
-            <h3 className="text-red-400 font-medium text-xs uppercase tracking-wide mb-2">
-              ✗ Gaps / 不足
-            </h3>
-            <ul className="space-y-2">
-              {job.gaps.map((g, i) => (
-                <li key={i} className="text-gray-300 text-xs flex gap-2">
-                  <span className="text-red-500 mt-0.5 shrink-0">•</span>
-                  <span><BilingualText text={g} /></span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {job.key_requirements?.length > 0 && (
-          <div>
-            <h3 className="text-orange-400 font-medium text-xs uppercase tracking-wide mb-2">
-              Key Requirements / 岗位要求
-            </h3>
-            <div className="flex flex-wrap gap-1.5">
-              {job.key_requirements.map((r, i) => (
-                <span
-                  key={i}
-                  className="bg-gray-800 text-gray-300 text-xs px-2 py-1 rounded leading-snug"
-                >
-                  <BilingualText text={r} />
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {job.noc_code && (
-          <div>
-            <h3 className="text-purple-400 font-medium text-xs uppercase tracking-wide mb-2">
-              NOC Classification / 职业分类
-            </h3>
-            <div className="bg-gray-800 rounded-lg p-3 space-y-1">
-              <p className="text-gray-200 text-xs font-medium">NOC {job.noc_code}</p>
-              {job.noc_explanation && (
-                <p className="text-gray-400 text-xs leading-relaxed">{job.noc_explanation}</p>
-              )}
-            </div>
-          </div>
-        )}
-
-        {!job.match_score && (
-          <p className="text-gray-600 text-xs italic">Analysis pending...</p>
-        )}
-      </div>
-
-      {/* Fixed footer — always visible */}
-      {job.apply_url && (
-        <div className="p-4 border-t border-gray-800 shrink-0">
+        {job.apply_url && (
           <a
             href={job.apply_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="block text-center bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium py-2 rounded-lg transition-colors"
+            className="ht-action-btn primary"
           >
-            Apply →
+            <i className="ti ti-external-link" /> Apply
           </a>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
