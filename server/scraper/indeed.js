@@ -31,13 +31,25 @@ function parsePostedDate(text) {
   return null;
 }
 
+let debuggedDetailPage = false;
+
 // Single-page date extraction from the job detail page.
 // Only called when the search results card contains no date text.
 async function getJobDateFromDetailPage(context, applyUrl, title) {
   const page = await context.newPage();
   try {
     await page.goto(applyUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(4000);
+
+    if (!debuggedDetailPage) {
+      debuggedDetailPage = true;
+      const snap = await page.evaluate(() => ({
+        title: document.title,
+        url: window.location.href,
+        text: (document.body?.innerText || '').replace(/\s+/g, ' ').trim().substring(0, 500),
+      })).catch(() => null);
+      console.log('[scraper] Detail page snapshot:', JSON.stringify(snap));
+    }
 
     const dateText = await page.evaluate(() => {
       const selectors = [
@@ -104,8 +116,26 @@ async function scrape(track) {
           try {
             if (!debuggedFirstCard) {
               debuggedFirstCard = true;
-              const rawHtml = await card.evaluate(el => el.outerHTML).catch(() => '(error)');
-              console.log('[scraper] First card HTML:', rawHtml);
+              const dateDebug = await card.evaluate(el => {
+                const sels = [
+                  '[data-testid="myJobsStateDate"]', '[data-testid="job-age"]',
+                  '[data-testid*="date"]', '[class*="date"]', '[class*="Date"]',
+                  '[class*="age"]', 'time',
+                ];
+                const hits = {};
+                for (const sel of sels) {
+                  const texts = Array.from(el.querySelectorAll(sel))
+                    .map(e => (e.innerText || e.textContent || '').trim())
+                    .filter(Boolean);
+                  if (texts.length) hits[sel] = texts;
+                }
+                const leafNew = Array.from(el.querySelectorAll('div, span'))
+                  .filter(e => e.children.length === 0 && (e.innerText || e.textContent || '').trim() === 'New')
+                  .length;
+                const fullText = (el.innerText || el.textContent || '').replace(/\s+/g, ' ').trim().substring(0, 400);
+                return JSON.stringify({ hits, leafNew, fullText });
+              }).catch(() => '(error)');
+              console.log('[scraper] First card date debug:', dateDebug);
             }
 
             const title = await card

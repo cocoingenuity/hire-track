@@ -82,8 +82,10 @@ async function runScrapeJob(db, trackId, runId) {
         job.description,
       ].filter(Boolean).join('\n');
 
+      console.log(`[analyzer] → "${job.title.substring(0, 50)}" (id=${job.id})`);
       try {
         const result = await analyze(resumeText, jobContext);
+        console.log(`[analyzer] ✓ score=${result.match_score} tier="${result.match_tier}"`);
         db.prepare(`
           UPDATE jobs SET
             match_score = ?, match_tier = ?,
@@ -105,7 +107,11 @@ async function runScrapeJob(db, trackId, runId) {
         );
         jobsAnalyzed++;
       } catch (err) {
-        console.error(`[analyzer] Failed for "${job.title}": ${err.message}`);
+        console.error(`[analyzer] ✗ "${job.title.substring(0, 50)}": ${err.message.substring(0, 120)}`);
+        if (err.dailyQuotaExceeded) {
+          console.error('[analyzer] Daily quota exhausted — aborting analysis for this run');
+          break;
+        }
       }
     }
     updateRun.run(jobsFound, jobsNew, jobsAnalyzed, runId);
