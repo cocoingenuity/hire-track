@@ -153,7 +153,7 @@ async function scrape(track) {
             // Detail page fallback removed — indeed.com returns a Cloudflare challenge for
             // viewjob URLs from headless browsers, so it never yields a date.
             const date_posted = parsePostedDate(cardDateText);
-            console.log(`[scraper] "${title.substring(0, 45)}" → "${dateRaw}" → ${date_posted}`);
+            console.log(`[scraper] "${title.substring(0, 45)}" → "${cardDateText}" → ${date_posted}`);
 
             // 14-day freshness filter (fromage=14 already handles this at source)
             if (date_posted) {
