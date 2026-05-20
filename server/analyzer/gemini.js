@@ -8,8 +8,26 @@ const model = genAI.getGenerativeModel({ model: modelName });
 const RATE_LIMIT_DELAY_MS = 4000; // 15 RPM free-tier cap → 1 req / 4 s minimum
 
 async function analyze(resumeText, jobDescription) {
-  const keyPreview = (process.env.GEMINI_API_KEY || '(not set)').substring(0, 10);
   const jobTitle = jobDescription.split('\n')[0].substring(0, 60);
+
+  if (process.env.DRY_RUN === 'true') {
+    const score = 60 + Math.floor(Math.random() * 35);
+    const tier = score >= 80 ? 'Strong Match' : score >= 60 ? 'Good Match' : 'Stretch';
+    console.log(`[gemini] DRY_RUN → "${jobTitle}" score=${score} tier="${tier}"`);
+    return {
+      match_score: score,
+      match_tier: tier,
+      strengths: ['Relevant experience / 相关工作经验'],
+      gaps: ['Area to develop / 需要发展的领域'],
+      key_requirements: ['Key skill required / 所需关键技能'],
+      apply_recommendation: score >= 60,
+      one_line_pitch: 'Dry-run placeholder — no Gemini call made.',
+      noc_code: '22220 – Computer Network Technicians',
+      noc_explanation: 'Dry-run placeholder.',
+    };
+  }
+
+  const keyPreview = (process.env.GEMINI_API_KEY || '(not set)').substring(0, 10);
   console.log(`[gemini] analyze() → "${jobTitle}" | key: ${keyPreview}...`);
   const prompt = `You are a job application assistant evaluating candidate fit.
 
