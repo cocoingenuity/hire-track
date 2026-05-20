@@ -20,20 +20,5 @@ module.exports = [
       'Office Coordinator Ottawa',
       'Operations Assistant Ottawa'
     ]
-  },
-  {
-    id: 'retail',
-    label: 'Retail+',
-    emoji: '🍎',
-    resume: './resumes/retail.pdf',
-    queries: [
-      'Apple Store Ottawa',
-      'Apple Specialist Ottawa',
-      'Microsoft Store Ottawa',
-      'Samsung Experience Store Ottawa',
-      'Dyson Ottawa',
-      'Sony Store Ottawa',
-      'Google Ottawa'
-    ]
   }
 ];
