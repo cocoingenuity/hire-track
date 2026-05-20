@@ -1,9 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import JobList from './components/JobList';
 import ScrapeProgress from './components/ScrapeProgress';
 import JobDetail from './components/JobDetail';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+// Prefer date_posted (job listing date) over scraped_at for date filters.
+// date_posted is YYYY-MM-DD (parse as UTC midnight); scraped_at is "YYYY-MM-DD HH:MM:SS" (UTC).
+function jobDate(job) {
+  if (job.date_posted) return new Date(job.date_posted + 'T00:00:00Z').getTime();
+  if (job.scraped_at)  return new Date(job.scraped_at  + 'Z').getTime();
+  return 0;
+}
 
 export default function App() {
   const [tracks, setTracks]           = useState([]);
@@ -13,6 +21,7 @@ export default function App() {
   const [jobs, setJobs]               = useState([]);
   const [selectedJob, setSelectedJob] = useState(null);
   const [filters, setFilters]         = useState({ tier: '', status: '', days: '' });
+  const [sort, setSort]               = useState('score'); // 'score' | 'date'
 
   useEffect(() => {
     fetch('/api/tracks')
@@ -37,14 +46,16 @@ export default function App() {
     return () => clearInterval(id);
   }, [isRefreshing, activeTrack]);
 
-  // Client-side filtering + dedup by (title, company): keep highest match_score per pair
-  const filteredJobs = (() => {
+  // Client-side filtering + dedup by (title, company): keep highest match_score per pair.
+  // Wrapped in useMemo so the array reference only changes when data/filters/sort change,
+  // not on every re-render triggered by selectedJob — preventing pagination from resetting.
+  const filteredJobs = useMemo(() => {
     const filtered = jobs.filter(job => {
       if (filters.tier   && job.match_tier !== filters.tier)   return false;
       if (filters.status && job.status     !== filters.status) return false;
       if (filters.days) {
         const cutoff = Date.now() - Number(filters.days) * DAY_MS;
-        if (!job.scraped_at || new Date(job.scraped_at + 'Z').getTime() < cutoff) return false;
+        if (jobDate(job) < cutoff) return false;
       }
       return true;
     });
@@ -56,24 +67,39 @@ export default function App() {
         seen.set(key, job);
       }
     }
-    return [...seen.values()];
-  })();
+    const deduped = [...seen.values()];
+    if (sort === 'date') {
+      deduped.sort((a, b) => {
+        const da = a.date_posted || a.scraped_at || '';
+        const db = b.date_posted || b.scraped_at || '';
+        return db.localeCompare(da);
+      });
+    } else {
+      deduped.sort((a, b) => (b.match_score ?? -1) - (a.match_score ?? -1));
+    }
+    return deduped;
+  }, [jobs, filters, sort]);
 
   // Sidebar counts always from the full unfiltered list
+  const cutoff1  = Date.now() - 1  * DAY_MS;
+  const cutoff3  = Date.now() - 3  * DAY_MS;
   const cutoff7  = Date.now() - 7  * DAY_MS;
   const cutoff30 = Date.now() - 30 * DAY_MS;
   const sidebarCounts = {
     strong:  jobs.filter(j => j.match_tier === 'Strong Match').length,
     good:    jobs.filter(j => j.match_tier === 'Good Match').length,
     stretch: jobs.filter(j => j.match_tier === 'Stretch').length,
-    days7:   jobs.filter(j => j.scraped_at && new Date(j.scraped_at + 'Z').getTime() >= cutoff7).length,
-    days30:  jobs.filter(j => j.scraped_at && new Date(j.scraped_at + 'Z').getTime() >= cutoff30).length,
+    days1:   jobs.filter(j => jobDate(j) >= cutoff1).length,
+    days3:   jobs.filter(j => jobDate(j) >= cutoff3).length,
+    days7:   jobs.filter(j => jobDate(j) >= cutoff7).length,
+    days30:  jobs.filter(j => jobDate(j) >= cutoff30).length,
   };
 
   function switchTrack(id) {
     setActiveTrack(id);
     setSelectedJob(null);
     setFilters({ tier: '', status: '', days: '' });
+    setSort('score');
   }
 
   function setFilter(key, value) {
@@ -132,8 +158,10 @@ export default function App() {
 
   const DATE_FILTERS = [
     { v: '',   label: 'All dates',    icon: 'ti-calendar' },
-    { v: '7',  label: 'Last 7 days',  icon: 'ti-clock',          count: sidebarCounts.days7 },
-    { v: '30', label: 'Last 30 days', icon: 'ti-calendar-month', count: sidebarCounts.days30 },
+    { v: '1',  label: 'Last 24 hours', icon: 'ti-clock',          count: sidebarCounts.days1 },
+    { v: '3',  label: 'Last 3 days',   icon: 'ti-clock',          count: sidebarCounts.days3 },
+    { v: '7',  label: 'Last 7 days',   icon: 'ti-clock',          count: sidebarCounts.days7 },
+    { v: '30', label: 'Last 30 days',  icon: 'ti-calendar-month', count: sidebarCounts.days30 },
   ];
 
   return (
@@ -214,7 +242,7 @@ export default function App() {
           <div className="ht-sidebar-divider" />
 
           <div className="ht-filter-group">
-            <div className="ht-filter-label">Scraped</div>
+            <div className="ht-filter-label">Posted</div>
             {DATE_FILTERS.map(item => (
               <button
                 key={item.v}
@@ -238,6 +266,8 @@ export default function App() {
             selectedJob={selectedJob}
             onSelect={setSelectedJob}
             onStatusChange={handleStatusChange}
+            sort={sort}
+            onSortChange={setSort}
           />
           {selectedJob && (
             <JobDetail

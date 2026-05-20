@@ -116,6 +116,20 @@ body {
 /* ─── Content area ───────────────────────────────────────────── */
 .ht-content { flex: 1; display: flex; overflow: hidden; }
 
+/* ─── Sort toggle ────────────────────────────────────────────── */
+.ht-sort-toggle {
+  display: flex; gap: 2px;
+  background: var(--ht-bg-2); border: 0.5px solid var(--ht-border);
+  border-radius: var(--ht-r-md); padding: 2px;
+}
+.ht-sort-btn {
+  padding: 3px 10px; border-radius: 6px; font-size: 12px;
+  border: none; background: transparent; color: var(--ht-text-3);
+  cursor: pointer; font-family: inherit; transition: all 0.12s;
+}
+.ht-sort-btn:hover { color: var(--ht-text); }
+.ht-sort-btn.active { background: var(--ht-bg); color: var(--ht-text); font-weight: 500; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+
 /* ─── Job list ───────────────────────────────────────────────── */
 .ht-job-list { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 6px; }
 .ht-list-header {

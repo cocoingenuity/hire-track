@@ -16,7 +16,7 @@ function getPageNumbers(current, total) {
   return result;
 }
 
-export default function JobList({ jobs, selectedJob, onSelect, onStatusChange }) {
+export default function JobList({ jobs, selectedJob, onSelect, onStatusChange, sort, onSortChange }) {
   const [page, setPage] = useState(1);
   useEffect(() => { setPage(1); }, [jobs]);
 
@@ -25,6 +25,10 @@ export default function JobList({ jobs, selectedJob, onSelect, onStatusChange })
       <div className="ht-job-list">
         <div className="ht-list-header">
           <span className="ht-list-title">Matching positions</span>
+          <div className="ht-sort-toggle">
+            <button onClick={() => onSortChange('score')} className={`ht-sort-btn${sort === 'score' ? ' active' : ''}`}>Best match</button>
+            <button onClick={() => onSortChange('date')}  className={`ht-sort-btn${sort === 'date'  ? ' active' : ''}`}>Newest first</button>
+          </div>
           <span className="ht-list-count">0 jobs</span>
         </div>
         <div className="ht-empty">
@@ -43,6 +47,10 @@ export default function JobList({ jobs, selectedJob, onSelect, onStatusChange })
     <div className="ht-job-list">
       <div className="ht-list-header">
         <span className="ht-list-title">Matching positions</span>
+        <div className="ht-sort-toggle">
+          <button onClick={() => onSortChange('score')} className={`ht-sort-btn${sort === 'score' ? ' active' : ''}`}>Best match</button>
+          <button onClick={() => onSortChange('date')}  className={`ht-sort-btn${sort === 'date'  ? ' active' : ''}`}>Newest first</button>
+        </div>
         <span className="ht-list-count">{jobs.length} jobs</span>
       </div>
 
