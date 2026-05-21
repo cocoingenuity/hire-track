@@ -3,6 +3,7 @@ const router = express.Router();
 const { getDb } = require('../db');
 const { analyze } = require('../analyzer');
 const { getResumeText } = require('../resumes');
+const { resume, isPaused } = require('../pause');
 
 router.post('/:track', (req, res) => {
   const db = getDb();
@@ -30,6 +31,8 @@ router.post('/:track', (req, res) => {
 });
 
 async function runAnalysisJob(db, trackId, runId) {
+  resume(trackId); // clear any stale pause flag from a previous run
+
   const updateRun = db.prepare(
     'UPDATE scrape_runs SET jobs_found = ?, jobs_new = ?, jobs_analyzed = ? WHERE id = ?'
   );
@@ -93,6 +96,12 @@ async function runAnalysisJob(db, trackId, runId) {
       }
     }
     updateRun.run(unanalyzed.length, 0, jobsAnalyzed, runId);
+
+    if (isPaused(trackId)) {
+      console.log(`[analyze/${trackId}] Paused after job ${job.id}`);
+      db.prepare("UPDATE scrape_runs SET status = 'paused' WHERE id = ?").run(runId);
+      return;
+    }
   }
 
   db.prepare(

@@ -4,6 +4,7 @@ const { getDb } = require('../db');
 const { scrape } = require('../scraper');
 const { analyze } = require('../analyzer');
 const { getResumeText } = require('../resumes');
+const { resume, isPaused } = require('../pause');
 
 router.post('/:track', (req, res) => {
   const db = getDb();
@@ -31,6 +32,8 @@ router.post('/:track', (req, res) => {
 });
 
 async function runScrapeJob(db, trackId, runId) {
+  resume(trackId); // clear any stale pause flag from a previous run
+
   const updateRun = db.prepare(
     'UPDATE scrape_runs SET jobs_found = ?, jobs_new = ?, jobs_analyzed = ? WHERE id = ?'
   );
@@ -122,6 +125,12 @@ async function runScrapeJob(db, trackId, runId) {
       }
     }
     updateRun.run(jobsFound, jobsNew, jobsAnalyzed, runId);
+
+    if (isPaused(trackId)) {
+      console.log(`[scrape/${trackId}] Paused after job ${job.id}`);
+      db.prepare("UPDATE scrape_runs SET status = 'paused' WHERE id = ?").run(runId);
+      return;
+    }
   }
 
   db.prepare(

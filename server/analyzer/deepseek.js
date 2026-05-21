@@ -54,6 +54,12 @@ Each item in strengths, gaps, and key_requirements must be a single string forma
 noc_code must use the Canadian NOC 2021 classification (5-digit codes). Example: "22220 – Computer Network Technicians".
 teer_level is the TEER level from NOC 2021 (0–5). It equals the second digit of the 5-digit NOC code — e.g. NOC 22220 → TEER 2.
 
+HARD BLOCKERS — if any of the following apply, the match_score MUST be 35 or below, match_tier MUST be "Skip", and apply_recommendation MUST be false. List the blocker as the first item in gaps:
+1. The job requires Canadian Permanent Residency or Citizenship (candidate is on a Post-Graduation Work Permit and does not qualify)
+2. The job requires 5+ years of Canadian security clearance (candidate has only been in Canada ~2.5 years and cannot meet this)
+3. The job requires French language skills (candidate does not speak French)
+4. The job requires a G driver's license (candidate does not have one)
+
 Scoring rubric — you MUST use the full 0–100 range and produce differentiated scores:
 - 90–100 Strong Match: Candidate meets virtually every requirement; directly relevant experience; minimal ramp-up needed
 - 80–89 Strong Match: Meets most requirements; only minor or easily bridgeable gaps

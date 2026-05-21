@@ -26,4 +26,9 @@ app.use('/api/jobs', require('./routes/jobs'));
 app.use('/api/scrape', require('./routes/scrape'));
 app.use('/api/analyze', require('./routes/analyze'));
 
+app.post('/api/pause/:track', (req, res) => {
+  require('./pause').pause(req.params.track);
+  res.json({ ok: true });
+});
+
 module.exports = app;

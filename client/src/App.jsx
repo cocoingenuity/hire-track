@@ -137,6 +137,10 @@ export default function App() {
       .catch(() => setIsRefreshing(false));
   }
 
+  function handlePause() {
+    fetch(`/api/pause/${activeTrack}`, { method: 'POST' });
+  }
+
   function handleScrapeComplete() {
     setIsRefreshing(false);
     loadJobs(activeTrack);
@@ -218,6 +222,7 @@ export default function App() {
         isActive={isRefreshing}
         mode={refreshMode}
         onComplete={handleScrapeComplete}
+        onPause={handlePause}
       />
 
       {/* Main */}

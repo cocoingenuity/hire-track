@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-export default function ScrapeProgress({ trackId, isActive, mode, onComplete }) {
+export default function ScrapeProgress({ trackId, isActive, mode, onComplete, onPause }) {
   const [stats, setStats] = useState(null);
   const intervalRef = useRef(null);
 
@@ -12,7 +12,7 @@ export default function ScrapeProgress({ trackId, isActive, mode, onComplete }) 
         .then(r => r.json())
         .then(data => {
           setStats(data);
-          if (data.status === 'done' || data.status === 'error') {
+          if (data.status === 'done' || data.status === 'error' || data.status === 'paused') {
             clearInterval(intervalRef.current);
             onComplete(data);
           }
@@ -43,6 +43,9 @@ export default function ScrapeProgress({ trackId, isActive, mode, onComplete }) 
           {stats.error_msg || 'Failed'}
         </span>
       )}
+      <button className="ht-btn" style={{ padding: '3px 10px', fontSize: 12 }} onClick={onPause}>
+        <i className="ti ti-player-pause" /> Pause
+      </button>
     </div>
   );
 }
