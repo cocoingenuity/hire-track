@@ -46,6 +46,13 @@ export default function App() {
     return () => clearInterval(id);
   }, [isRefreshing, activeTrack]);
 
+  // Background auto-refresh every 60s when idle
+  useEffect(() => {
+    if (!activeTrack) return;
+    const id = setInterval(() => { if (!isRefreshing) loadJobs(activeTrack); }, 60000);
+    return () => clearInterval(id);
+  }, [activeTrack, isRefreshing]);
+
   // Client-side filtering + dedup by (title, company): keep highest match_score per pair.
   // Wrapped in useMemo so the array reference only changes when data/filters/sort change,
   // not on every re-render triggered by selectedJob — preventing pagination from resetting.
