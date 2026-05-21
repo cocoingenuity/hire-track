@@ -5,23 +5,32 @@ const DELAY = () => 3000 + Math.random() * 3000;
 // Word-boundary match for common French job title words
 const FRENCH_TITLE_RE = /\b(subalterne|analyste|agente|responsable|adjointe?|coordonnatrice?|coordonnateur|technicienne?|sp[eé]cialiste|conseill[eè]re?|directrice|directeur|gestionnaire|ing[eé]nieure?|charg[eé]e?|principale?|soutien|pr[eé]pos[eé]e?|administratrice?|op[eé]rateur|op[eé]ratrice)\b/i;
 
+// IT/tech allowlist — title must contain at least one of these to be imported
+const IT_TITLE_RE = /\b(support|systems?|network|technician|help[\s-]?desk|desktop|infrastructure|security|analyst|administrator|engineer|specialist|coordinator|technical|cyber|cloud|data)\b/i;
+const IT_ACRONYM_RE = /\bIT\b/; // case-sensitive to avoid matching "it"
+
 const DESC_BLOCKERS = [
   'secret clearance',
   'top secret',
   'reliability clearance required',
   'must be canadian citizen',
   'canadian citizenship required',
+  'must be pr',
   'pr required',
   'bilingual',
   'french required',
   "valid g driver's license",
   "g driver's license required",
+  'g license required',
 ];
 
 function shouldFilter(title, description) {
   if (FRENCH_TITLE_RE.test(title || '')) return true;
   const descLower = (description || '').toLowerCase();
-  return DESC_BLOCKERS.some(phrase => descLower.includes(phrase));
+  if (DESC_BLOCKERS.some(phrase => descLower.includes(phrase))) return true;
+  // Reject non-IT titles
+  if (!IT_TITLE_RE.test(title || '') && !IT_ACRONYM_RE.test(title || '')) return true;
+  return false;
 }
 
 // f_TPR=r259200 → past 3 days (259200 seconds)
