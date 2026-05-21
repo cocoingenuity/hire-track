@@ -27,6 +27,19 @@ async function scrape(track) {
           `&location=Ottawa%2C%20Ontario%2C%20Canada&f_TPR=${TIME_FILTER}&start=${start}`;
 
         await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
+
+        // Detect login wall / authwall before waiting or scraping
+        const landedUrl = page.url();
+        if (
+          landedUrl.includes('/login') ||
+          landedUrl.includes('authwall') ||
+          landedUrl.includes('checkpoint')
+        ) {
+          const err = new Error(`LINKEDIN_AUTH_WALL: redirected to ${landedUrl}`);
+          err.authWall = true;
+          throw err;
+        }
+
         await page.waitForTimeout(DELAY());
 
         // Expand lazy-loaded cards

@@ -42,6 +42,10 @@ async function runScrapeJob(db, trackId, runId) {
 
   const rawJobs = await scrape(trackId);
 
+  // Stamp the raw count immediately so the progress banner shows something
+  // during the insertion + analysis phase rather than staying at 0.
+  db.prepare('UPDATE scrape_runs SET jobs_found = ? WHERE id = ?').run(rawJobs.length, runId);
+
   for (const job of rawJobs) {
     jobsFound++;
     try {
