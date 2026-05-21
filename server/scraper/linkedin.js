@@ -2,6 +2,28 @@ const { chromium } = require('playwright');
 
 const DELAY = () => 3000 + Math.random() * 3000;
 
+// Word-boundary match for common French job title words
+const FRENCH_TITLE_RE = /\b(subalterne|analyste|agente|responsable|adjointe?|coordonnatrice?|coordonnateur|technicienne?|sp[eé]cialiste|conseill[eè]re?|directrice|directeur|gestionnaire|ing[eé]nieure?|charg[eé]e?|principale?|soutien|pr[eé]pos[eé]e?|administratrice?|op[eé]rateur|op[eé]ratrice)\b/i;
+
+const DESC_BLOCKERS = [
+  'secret clearance',
+  'top secret',
+  'reliability clearance required',
+  'must be canadian citizen',
+  'canadian citizenship required',
+  'pr required',
+  'bilingual',
+  'french required',
+  "valid g driver's license",
+  "g driver's license required",
+];
+
+function shouldFilter(title, description) {
+  if (FRENCH_TITLE_RE.test(title || '')) return true;
+  const descLower = (description || '').toLowerCase();
+  return DESC_BLOCKERS.some(phrase => descLower.includes(phrase));
+}
+
 // f_TPR=r259200 → past 3 days (259200 seconds)
 const TIME_FILTER = 'r259200';
 
@@ -94,6 +116,11 @@ async function scrape(track) {
               }
               return '';
             }).catch(() => '');
+
+            if (shouldFilter(title, description)) {
+              console.log(`[linkedin] FILTERED "${title.substring(0, 45)}"`);
+              continue;
+            }
 
             console.log(`[linkedin] "${title.substring(0, 45)}" → ${date_posted}`);
 
