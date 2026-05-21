@@ -6,8 +6,35 @@ const DELAY = () => 3000 + Math.random() * 3000;
 const FRENCH_TITLE_RE = /\b(subalterne|analyste|agente|responsable|adjointe?|coordonnatrice?|coordonnateur|technicienne?|sp[eé]cialiste|conseill[eè]re?|directrice|directeur|gestionnaire|ing[eé]nieure?|charg[eé]e?|principale?|soutien|pr[eé]pos[eé]e?|administratrice?|op[eé]rateur|op[eé]ratrice)\b/i;
 
 // IT/tech allowlist — title must contain at least one of these to be imported
-const IT_TITLE_RE = /\b(support|systems?|network|technician|help[\s-]?desk|desktop|infrastructure|security|analyst|administrator|engineer|specialist|coordinator|technical|cyber|cloud|data)\b/i;
+const IT_TITLE_RE = /\b(support|systems?|network|technician|help[\s-]?desk|desktop|infrastructure|security|analyst|administrator|engineer|specialist|coordinator|technical|cyber|cloud|data|software|developer|database)\b/i;
 const IT_ACRONYM_RE = /\bIT\b/; // case-sensitive to avoid matching "it"
+
+// Non-IT domain phrases that veto an IT keyword match.
+// Handles cases where broad words like "engineer/specialist/coordinator" appear in
+// non-IT fields (air quality, marketing, automotive, etc.).
+const TITLE_DOMAIN_BLOCKERS = [
+  // Non-IT office/admin
+  'office administrator', 'office admin', 'administrative support',
+  'administrative coordinator', 'administrative assistant',
+  'bilingual',
+  // Sales / marketing / HR
+  'marketing', 'sales representative', 'sales rep', 'sales specialist',
+  'recruiter', 'recruitment', 'talent acquisition',
+  // Non-IT engineering / science
+  'air quality', 'environmental', 'noise engineer',
+  'archaeolog', 'chemist', 'biolog', 'geolog',
+  'reliability engineer', 'mechanical engineer', 'civil engineer',
+  'structural engineer', 'field applications', 'space mission',
+  'manufacturing',
+  // Trades / facilities / other physical roles
+  'construction', 'retread', 'work study', 'building controls',
+  'automotive', 'cleaning', 'facilities',
+  'hearing aid', 'audiolog',
+  // Business / finance context
+  'business planning', 'accident benefits',
+  // Security clearance stated in the title itself
+  'secret clearance',
+];
 
 const DESC_BLOCKERS = [
   'secret clearance',
@@ -26,9 +53,11 @@ const DESC_BLOCKERS = [
 
 function shouldFilter(title, description) {
   if (FRENCH_TITLE_RE.test(title || '')) return true;
-  const descLower = (description || '').toLowerCase();
-  if (DESC_BLOCKERS.some(phrase => descLower.includes(phrase))) return true;
-  // Reject non-IT titles
+  const titleLower = (title || '').toLowerCase();
+  const descLower  = (description || '').toLowerCase();
+  if (DESC_BLOCKERS.some(phrase => descLower.includes(phrase)))   return true;
+  if (TITLE_DOMAIN_BLOCKERS.some(phrase => titleLower.includes(phrase))) return true;
+  // Reject titles with no IT keywords at all
   if (!IT_TITLE_RE.test(title || '') && !IT_ACRONYM_RE.test(title || '')) return true;
   return false;
 }
