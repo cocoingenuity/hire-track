@@ -250,7 +250,8 @@ body {
   background: var(--ht-bg-2); border: 0.5px solid var(--ht-border);
   border-radius: var(--ht-r-md); padding: 11px 13px;
 }
-.ht-noc-code { font-size: 12px; font-weight: 500; color: var(--ht-text); margin-bottom: 3px; }
+.ht-noc-code { font-size: 12px; font-weight: 500; color: var(--ht-text); margin-bottom: 2px; }
+.ht-noc-teer { font-size: 11px; font-weight: 500; color: #534AB7; margin-bottom: 4px; letter-spacing: 0.03em; }
 .ht-noc-sub  { font-size: 12px; color: var(--ht-text-3); line-height: 1.5; }
 
 /* Skill alignment progress bars */
@@ -265,6 +266,24 @@ body {
 .ht-progress-fill.green { background: var(--ht-green); }
 .ht-progress-fill.blue  { background: #378ADD; }
 .ht-progress-val { font-size: 12px; font-weight: 500; color: var(--ht-text-2); width: 28px; text-align: right; }
+
+/* Status button group */
+.ht-status-group {
+  display: flex; flex-wrap: wrap; gap: 4px;
+  padding: 10px 18px; border-top: 0.5px solid var(--ht-border); flex-shrink: 0;
+}
+.ht-status-btn {
+  flex: 1; min-width: calc(33.33% - 4px);
+  padding: 6px 4px; border-radius: var(--ht-r-md);
+  font-size: 11px; font-weight: 500; cursor: pointer;
+  border: 0.5px solid var(--ht-border); background: var(--ht-bg-2); color: var(--ht-text-2);
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+  transition: all 0.15s; font-family: inherit;
+}
+.ht-status-btn:hover { background: var(--ht-bg-3); border-color: var(--ht-border-2); color: var(--ht-text); }
+
+/* Apply row */
+.ht-apply-row { padding: 0 18px 14px; flex-shrink: 0; }
 
 /* Action row */
 .ht-action-row {

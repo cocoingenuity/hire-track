@@ -1,3 +1,11 @@
+const STATUS_OPTIONS = [
+  { v: 'Saved',     label: 'Saved',     icon: 'ti-bookmark', color: '#1D9E75' },
+  { v: 'Applied',   label: 'Applied',   icon: 'ti-send',     color: '#3B82F6' },
+  { v: 'Interview', label: 'Interview', icon: 'ti-users',    color: '#8B5CF6' },
+  { v: 'Offer',     label: 'Offer',     icon: 'ti-trophy',   color: '#F59E0B' },
+  { v: 'Rejected',  label: 'Rejected',  icon: 'ti-x',        color: '#EF4444' },
+];
+
 function englishOnly(text) {
   if (!text) return text;
   const idx = text.indexOf(' / ');
@@ -8,6 +16,12 @@ function formatDate(date_posted) {
   if (!date_posted) return null;
   const [y, m, d] = date_posted.split('-').map(Number);
   return new Date(y, m - 1, d).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' });
+}
+
+// TEER level is the second digit of the 5-digit NOC code — use as fallback for pre-teer_level rows.
+function teerFromNoc(noc_code) {
+  const m = noc_code && noc_code.match(/^(\d{5})/);
+  return m ? parseInt(m[1][1]) : null;
 }
 
 // Derive 4 skill-alignment bars from match_score deterministically
@@ -35,10 +49,6 @@ export default function JobDetail({ job, onClose, onStatusChange }) {
   const theme    = TIER_THEME[job.match_tier] || TIER_THEME['Skip'];
   const progress = deriveProgress(job.match_score, job.id);
   const dateStr  = formatDate(job.date_posted);
-
-  function handleSave() {
-    onStatusChange(job.id, job.status === 'Saved' ? '' : 'Saved');
-  }
 
   return (
     <div className="ht-detail-panel">
@@ -154,6 +164,12 @@ export default function JobDetail({ job, onClose, onStatusChange }) {
               </div>
               <div className="ht-noc-box">
                 <div className="ht-noc-code">NOC {job.noc_code}</div>
+                {(() => {
+                  const teer = job.teer_level ?? teerFromNoc(job.noc_code);
+                  return teer != null ? (
+                    <div className="ht-noc-teer">TEER {teer}</div>
+                  ) : null;
+                })()}
                 {job.noc_explanation && (
                   <div className="ht-noc-sub">{job.noc_explanation}</div>
                 )}
@@ -163,26 +179,37 @@ export default function JobDetail({ job, onClose, onStatusChange }) {
         </div>
       </div>
 
-      {/* Action row */}
-      <div className="ht-action-row">
-        <button
-          onClick={handleSave}
-          className={`ht-action-btn${job.status === 'Saved' ? ' primary' : ''}`}
-        >
-          <i className="ti ti-bookmark" />
-          {job.status === 'Saved' ? 'Saved' : 'Save'}
-        </button>
-        {job.apply_url && (
+      {/* Status buttons */}
+      <div className="ht-status-group">
+        {STATUS_OPTIONS.map(s => {
+          const isActive = job.status === s.v;
+          return (
+            <button
+              key={s.v}
+              onClick={() => onStatusChange(job.id, isActive ? null : s.v)}
+              className="ht-status-btn"
+              style={isActive ? { background: s.color, borderColor: s.color, color: '#fff' } : {}}
+            >
+              <i className={`ti ${s.icon}`} />
+              {s.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Apply link */}
+      {job.apply_url && (
+        <div className="ht-apply-row">
           <a
             href={job.apply_url}
             target="_blank"
             rel="noopener noreferrer"
             className="ht-action-btn primary"
           >
-            <i className="ti ti-external-link" /> Apply
+            <i className="ti ti-external-link" /> Apply on LinkedIn
           </a>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -86,13 +86,18 @@ export default function App() {
   const cutoff7  = Date.now() - 7  * DAY_MS;
   const cutoff30 = Date.now() - 30 * DAY_MS;
   const sidebarCounts = {
-    strong:  jobs.filter(j => j.match_tier === 'Strong Match').length,
-    good:    jobs.filter(j => j.match_tier === 'Good Match').length,
-    stretch: jobs.filter(j => j.match_tier === 'Stretch').length,
-    days1:   jobs.filter(j => jobDate(j) >= cutoff1).length,
-    days3:   jobs.filter(j => jobDate(j) >= cutoff3).length,
-    days7:   jobs.filter(j => jobDate(j) >= cutoff7).length,
-    days30:  jobs.filter(j => jobDate(j) >= cutoff30).length,
+    strong:    jobs.filter(j => j.match_tier === 'Strong Match').length,
+    good:      jobs.filter(j => j.match_tier === 'Good Match').length,
+    stretch:   jobs.filter(j => j.match_tier === 'Stretch').length,
+    days1:     jobs.filter(j => jobDate(j) >= cutoff1).length,
+    days3:     jobs.filter(j => jobDate(j) >= cutoff3).length,
+    days7:     jobs.filter(j => jobDate(j) >= cutoff7).length,
+    days30:    jobs.filter(j => jobDate(j) >= cutoff30).length,
+    saved:     jobs.filter(j => j.status === 'Saved').length,
+    applied:   jobs.filter(j => j.status === 'Applied').length,
+    interview: jobs.filter(j => j.status === 'Interview').length,
+    offer:     jobs.filter(j => j.status === 'Offer').length,
+    rejected:  jobs.filter(j => j.status === 'Rejected').length,
   };
 
   function switchTrack(id) {
@@ -149,11 +154,11 @@ export default function App() {
 
   const STATUS_FILTERS = [
     { v: '',          label: 'All statuses', icon: 'ti-inbox' },
-    { v: 'Saved',     label: 'Saved',        icon: 'ti-bookmark' },
-    { v: 'Applied',   label: 'Applied',      icon: 'ti-send' },
-    { v: 'Interview', label: 'Interview',    icon: 'ti-users' },
-    { v: 'Offer',     label: 'Offer',        icon: 'ti-trophy' },
-    { v: 'Rejected',  label: 'Rejected',     icon: 'ti-x' },
+    { v: 'Saved',     label: 'Saved',        icon: 'ti-bookmark', count: sidebarCounts.saved },
+    { v: 'Applied',   label: 'Applied',      icon: 'ti-send',     count: sidebarCounts.applied },
+    { v: 'Interview', label: 'Interview',    icon: 'ti-users',    count: sidebarCounts.interview },
+    { v: 'Offer',     label: 'Offer',        icon: 'ti-trophy',   count: sidebarCounts.offer },
+    { v: 'Rejected',  label: 'Rejected',     icon: 'ti-x',        count: sidebarCounts.rejected },
   ];
 
   const DATE_FILTERS = [
@@ -235,6 +240,9 @@ export default function App() {
               >
                 <i className={`ti ${item.icon}`} />
                 <span>{item.label}</span>
+                {item.count !== undefined && (
+                  <span className="ht-filter-count">{item.count}</span>
+                )}
               </button>
             ))}
           </div>

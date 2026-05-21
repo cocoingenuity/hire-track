@@ -24,6 +24,7 @@ async function analyze(resumeText, jobDescription) {
       one_line_pitch: 'Dry-run placeholder — no Gemini call made.',
       noc_code: '22220 – Computer Network Technicians',
       noc_explanation: 'Dry-run placeholder.',
+      teer_level: 2,
     };
   }
 
@@ -47,11 +48,13 @@ Analyze how well this candidate matches this job. Return ONLY valid JSON with th
   "apply_recommendation": <true|false>,
   "one_line_pitch": "<personalized cover letter opener in English only>",
   "noc_code": "<5-digit NOC code> – <NOC job title>",
-  "noc_explanation": "<one sentence explaining why this NOC code applies to this job>"
+  "noc_explanation": "<one sentence explaining why this NOC code applies to this job>",
+  "teer_level": <integer 0-5>
 }
 
 Each item in strengths, gaps, and key_requirements must be a single string formatted as "English description / 简体中文翻译" — the slash separates the two languages.
 noc_code must use the Canadian NOC 2021 classification (5-digit codes). Example: "22220 – Computer Network Technicians".
+teer_level is the TEER level from NOC 2021 (0–5). It equals the second digit of the 5-digit NOC code — e.g. NOC 22220 → TEER 2.
 Scoring: Strong Match = 80-100, Good Match = 60-79, Stretch = 40-59, Skip = 0-39`;
 
   await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_DELAY_MS));

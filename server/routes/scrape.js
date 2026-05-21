@@ -93,7 +93,7 @@ async function runScrapeJob(db, trackId, runId) {
             match_score = ?, match_tier = ?,
             strengths = ?, gaps = ?, key_requirements = ?,
             apply_recommendation = ?, one_line_pitch = ?,
-            noc_code = ?, noc_explanation = ?,
+            noc_code = ?, noc_explanation = ?, teer_level = ?,
             analyzed_at = datetime('now')
           WHERE id = ?
         `).run(
@@ -105,6 +105,7 @@ async function runScrapeJob(db, trackId, runId) {
           result.one_line_pitch,
           result.noc_code || null,
           result.noc_explanation || null,
+          result.teer_level ?? null,
           job.id
         );
         jobsAnalyzed++;

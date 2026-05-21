@@ -40,6 +40,7 @@ function getDb() {
       one_line_pitch    TEXT,
       noc_code          TEXT,
       noc_explanation   TEXT,
+      teer_level        INTEGER,
       analyzed_at       TEXT,
       status            TEXT DEFAULT NULL,
       scraped_at        TEXT DEFAULT CURRENT_TIMESTAMP
@@ -72,6 +73,10 @@ function getDb() {
     try { _db.prepare('ALTER TABLE jobs ADD COLUMN noc_code TEXT').run(); } catch {}
     try { _db.prepare('ALTER TABLE jobs ADD COLUMN noc_explanation TEXT').run(); } catch {}
     _db.pragma('user_version = 2');
+  }
+  if (ver < 3) {
+    try { _db.prepare('ALTER TABLE jobs ADD COLUMN teer_level INTEGER').run(); } catch {}
+    _db.pragma('user_version = 3');
   }
 
   // Every startup: abandon any scrape runs that were left in 'running' state by a
