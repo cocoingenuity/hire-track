@@ -206,7 +206,7 @@ export default function App() {
             <i className="ti ti-refresh" />
             {isRefreshing && refreshMode === 'scrape' ? 'Scraping…' : 'Refresh'}
           </button>
-          <button onClick={handleAnalyze} disabled={isRefreshing} className="ht-btn ht-btn-primary">
+          <button onClick={handleAnalyze} disabled={isRefreshing} className="ht-btn ht-btn-dark">
             <i className="ti ti-bolt" />
             {isRefreshing && refreshMode === 'analyze' ? 'Analyzing…' : 'Analyze'}
           </button>

@@ -39,10 +39,10 @@ function deriveProgress(score, jobId) {
 }
 
 const TIER_THEME = {
-  'Strong Match': { bigBg: '#5DCAA5', bigColor: '#085041', labelColor: '#0F6E56' },
-  'Good Match':   { bigBg: '#85B7EB', bigColor: '#042C53', labelColor: '#185FA5' },
-  'Stretch':      { bigBg: '#FCD34D', bigColor: '#78350F', labelColor: '#92400E' },
-  'Skip':         { bigBg: '#E5E7EB', bigColor: '#374151', labelColor: '#6B7280' },
+  'Strong Match': { scoreColor: '#1D9E75', labelColor: '#0F6E56' },
+  'Good Match':   { scoreColor: '#3B6D11', labelColor: '#185FA5' },
+  'Stretch':      { scoreColor: '#92400E', labelColor: '#92400E' },
+  'Skip':         { scoreColor: '#909085', labelColor: '#6B7280' },
 };
 
 export default function JobDetail({ job, onClose, onStatusChange }) {
@@ -65,10 +65,7 @@ export default function JobDetail({ job, onClose, onStatusChange }) {
 
           {job.match_score != null ? (
             <div className="ht-detail-score-row">
-              <div
-                className="ht-detail-score-big"
-                style={{ background: theme.bigBg, color: theme.bigColor }}
-              >
+              <div className="ht-detail-score-num" style={{ color: theme.scoreColor }}>
                 {job.match_score}
               </div>
               <div>
