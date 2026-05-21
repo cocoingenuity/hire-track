@@ -23,7 +23,7 @@ const TITLE_DOMAIN_BLOCKERS = [
   // Non-IT engineering / science
   'air quality', 'environmental', 'noise engineer',
   'archaeolog', 'chemist', 'biolog', 'geolog',
-  'reliability engineer', 'mechanical engineer', 'civil engineer',
+  'mechanical engineer', 'civil engineer',
   'structural engineer', 'field applications', 'space mission',
   'manufacturing',
   // Trades / facilities / other physical roles
@@ -63,11 +63,10 @@ function shouldFilter(title, description) {
   const dl = (description || '').toLowerCase();
   if (DESC_BLOCKERS.some(phrase => dl.includes(phrase))) return true;
   if (TITLE_DOMAIN_BLOCKERS.some(phrase => tl.includes(phrase))) return true;
-  // Role/seniority rules with narrow IT-support exceptions
-  if (tl.includes('senior') && !tl.includes('senior support')) return true;
-  if (tl.includes('manager') && !tl.includes('project manager') && !tl.includes('program manager')) return true;
-  if (tl.includes('lead') && !tl.includes('help desk lead') && !tl.includes('it lead')) return true;
-  if (tl.includes('consultant') && !tl.includes('security consultant')) return true;
+  // Block "senior" only when paired with a clearly senior-level role type.
+  // senior + analyst/specialist/support/consultant/technician are allowed.
+  if (tl.includes('senior') &&
+      ['architect', 'director', 'manager', 'engineer'].some(w => tl.includes(w))) return true;
   // Reject titles with no IT keywords at all
   if (!IT_TITLE_RE.test(title || '') && !IT_ACRONYM_RE.test(title || '')) return true;
   return false;
