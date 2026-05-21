@@ -34,6 +34,12 @@ const TITLE_DOMAIN_BLOCKERS = [
   'business planning', 'accident benefits',
   // Security clearance stated in the title itself
   'secret clearance',
+  // Senior / specialist roles out of scope for IT support job search
+  'architect',       // solution architect, system architect, technical architect, etc.
+  'director',
+  'principal',
+  'data engineer',   // too senior/specialized; "data analyst" still passes
+  'forward deployed',
 ];
 
 const DESC_BLOCKERS = [
@@ -53,10 +59,15 @@ const DESC_BLOCKERS = [
 
 function shouldFilter(title, description) {
   if (FRENCH_TITLE_RE.test(title || '')) return true;
-  const titleLower = (title || '').toLowerCase();
-  const descLower  = (description || '').toLowerCase();
-  if (DESC_BLOCKERS.some(phrase => descLower.includes(phrase)))   return true;
-  if (TITLE_DOMAIN_BLOCKERS.some(phrase => titleLower.includes(phrase))) return true;
+  const tl = (title || '').toLowerCase();
+  const dl = (description || '').toLowerCase();
+  if (DESC_BLOCKERS.some(phrase => dl.includes(phrase))) return true;
+  if (TITLE_DOMAIN_BLOCKERS.some(phrase => tl.includes(phrase))) return true;
+  // Role/seniority rules with narrow IT-support exceptions
+  if (tl.includes('senior') && !tl.includes('senior support')) return true;
+  if (tl.includes('manager') && !tl.includes('project manager') && !tl.includes('program manager')) return true;
+  if (tl.includes('lead') && !tl.includes('help desk lead') && !tl.includes('it lead')) return true;
+  if (tl.includes('consultant') && !tl.includes('security consultant')) return true;
   // Reject titles with no IT keywords at all
   if (!IT_TITLE_RE.test(title || '') && !IT_ACRONYM_RE.test(title || '')) return true;
   return false;
