@@ -1,7 +1,7 @@
 require('dotenv').config();
 
 const DEEPSEEK_API_URL = 'https://api.deepseek.com/chat/completions';
-const MODEL = process.env.DEEPSEEK_MODEL || 'deepseek-v4-pro';
+const MODEL = process.env.DEEPSEEK_MODEL || 'deepseek-v4-flash';
 const RATE_LIMIT_DELAY_MS = 200;
 
 async function analyze(resumeText, jobDescription) {
@@ -73,8 +73,17 @@ IMPORTANT: Do NOT default to 85. Scores must reflect genuine differentiation —
 
   await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_DELAY_MS));
 
+  const FETCH_TIMEOUT_MS = 60000;
+
+  function fetchWithTimeout(url, options) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+    return fetch(url, { ...options, signal: controller.signal })
+      .finally(() => clearTimeout(timer));
+  }
+
   try {
-    const response = await fetch(DEEPSEEK_API_URL, {
+    const response = await fetchWithTimeout(DEEPSEEK_API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -109,7 +118,7 @@ IMPORTANT: Do NOT default to 85. Scores must reflect genuine differentiation —
       const waitMs = 10000;
       console.log(`[deepseek] Rate limited — waiting ${waitMs / 1000}s before retry`);
       await new Promise(resolve => setTimeout(resolve, waitMs));
-      const response = await fetch(DEEPSEEK_API_URL, {
+      const response = await fetchWithTimeout(DEEPSEEK_API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
