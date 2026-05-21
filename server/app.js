@@ -33,4 +33,11 @@ app.post('/api/pause/:track', (req, res) => {
   res.json({ ok: true });
 });
 
+app.post('/api/stop/:track', (req, res) => {
+  const { track } = req.params;
+  require('./pause').stop(track);
+  console.log(`[stop] flag set for track="${track}"`);
+  res.json({ ok: true });
+});
+
 module.exports = app;

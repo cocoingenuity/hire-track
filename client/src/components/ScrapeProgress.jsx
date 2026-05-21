@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-export default function ScrapeProgress({ trackId, isActive, mode, onComplete, onPause, isPausing }) {
+export default function ScrapeProgress({ trackId, isActive, mode, onComplete, onPause, onResume, onStop, pauseState }) {
   const [stats, setStats] = useState(null);
   const intervalRef = useRef(null);
 
@@ -12,7 +12,8 @@ export default function ScrapeProgress({ trackId, isActive, mode, onComplete, on
         .then(r => r.json())
         .then(data => {
           setStats(data);
-          if (data.status === 'done' || data.status === 'error' || data.status === 'paused') {
+          // Only auto-dismiss on done/error; paused state is managed by Resume/Stop buttons
+          if (data.status === 'done' || data.status === 'error') {
             clearInterval(intervalRef.current);
             onComplete(data);
           }
@@ -25,13 +26,14 @@ export default function ScrapeProgress({ trackId, isActive, mode, onComplete, on
 
   if (!isActive) return null;
 
+  const isPaused = pauseState === 'paused';
   const verb = mode === 'analyze' ? 'Analyzing' : 'Scraping';
 
   return (
     <div className="ht-progress-banner">
-      <span className="ht-progress-banner-label">{verb}…</span>
+      <span className="ht-progress-banner-label">{isPaused ? 'Paused' : `${verb}…`}</span>
       <div className="ht-progress-banner-track">
-        <div className="ht-progress-banner-fill" />
+        <div className={`ht-progress-banner-fill${isPaused ? ' paused' : ''}`} />
       </div>
       {stats && (
         <span className="ht-progress-banner-stats">
@@ -43,15 +45,25 @@ export default function ScrapeProgress({ trackId, isActive, mode, onComplete, on
           {stats.error_msg || 'Failed'}
         </span>
       )}
-      <button
-        className="ht-btn"
-        style={{ padding: '3px 10px', fontSize: 12 }}
-        onClick={onPause}
-        disabled={isPausing}
-      >
-        <i className={`ti ${isPausing ? 'ti-loader-2' : 'ti-player-pause'}`} />
-        {isPausing ? ' Pausing…' : ' Pause'}
-      </button>
+      {isPaused ? (
+        <>
+          <button className="ht-btn" style={{ padding: '3px 10px', fontSize: 12 }} onClick={onResume}>
+            <i className="ti ti-player-play" /> Resume
+          </button>
+          <button className="ht-btn" style={{ padding: '3px 10px', fontSize: 12 }} onClick={onStop}>
+            <i className="ti ti-square" /> Stop
+          </button>
+        </>
+      ) : (
+        <>
+          <button className="ht-btn" style={{ padding: '3px 10px', fontSize: 12 }} onClick={onPause}>
+            <i className="ti ti-player-pause" /> Pause
+          </button>
+          <button className="ht-btn" style={{ padding: '3px 10px', fontSize: 12 }} onClick={onStop}>
+            <i className="ti ti-square" /> Stop
+          </button>
+        </>
+      )}
     </div>
   );
 }

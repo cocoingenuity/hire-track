@@ -18,7 +18,7 @@ export default function App() {
   const [activeTrack, setActiveTrack] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshMode, setRefreshMode] = useState('scrape');
-  const [isPausing, setIsPausing] = useState(false);
+  const [pauseState, setPauseState] = useState(null); // null | 'paused'
   const [jobs, setJobs]               = useState([]);
   const [selectedJob, setSelectedJob] = useState(null);
   const [filters, setFilters]         = useState({ tier: '', status: '', days: '' });
@@ -139,14 +139,26 @@ export default function App() {
   }
 
   function handlePause() {
-    setIsPausing(true);
-    fetch(`/api/pause/${activeTrack}`, { method: 'POST' })
-      .catch(() => setIsPausing(false));
+    setPauseState('paused');
+    fetch(`/api/pause/${activeTrack}`, { method: 'POST' });
+  }
+
+  function handleResume() {
+    setPauseState(null);
+    setRefreshMode('analyze');
+    fetch(`/api/analyze/${activeTrack}`, { method: 'POST' })
+      .catch(() => setIsRefreshing(false));
+  }
+
+  function handleStop() {
+    setIsRefreshing(false);
+    setPauseState(null);
+    fetch(`/api/stop/${activeTrack}`, { method: 'POST' });
   }
 
   function handleScrapeComplete() {
     setIsRefreshing(false);
-    setIsPausing(false);
+    setPauseState(null);
     loadJobs(activeTrack);
   }
 
@@ -227,7 +239,9 @@ export default function App() {
         mode={refreshMode}
         onComplete={handleScrapeComplete}
         onPause={handlePause}
-        isPausing={isPausing}
+        onResume={handleResume}
+        onStop={handleStop}
+        pauseState={pauseState}
       />
 
       {/* Main */}

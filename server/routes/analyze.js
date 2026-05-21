@@ -3,7 +3,7 @@ const router = express.Router();
 const { getDb } = require('../db');
 const { analyze } = require('../analyzer');
 const { getResumeText } = require('../resumes');
-const { resume, isPaused } = require('../pause');
+const { resume, isPaused, isStopped } = require('../pause');
 
 router.post('/:track', (req, res) => {
   const db = getDb();
@@ -56,9 +56,10 @@ async function runAnalysisJob(db, trackId, runId) {
   updateRun.run(unanalyzed.length, 0, jobsAnalyzed, runId);
 
   for (const job of unanalyzed) {
-    if (isPaused(trackId)) {
-      console.log(`[analyze/${trackId}] Paused before job ${job.id}`);
-      db.prepare("UPDATE scrape_runs SET status = 'paused' WHERE id = ?").run(runId);
+    if (isPaused(trackId) || isStopped(trackId)) {
+      const stopped = isStopped(trackId);
+      console.log(`[analyze/${trackId}] ${stopped ? 'Stopped' : 'Paused'} before job ${job.id}`);
+      db.prepare('UPDATE scrape_runs SET status = ? WHERE id = ?').run(stopped ? 'done' : 'paused', runId);
       return;
     }
 
@@ -103,9 +104,10 @@ async function runAnalysisJob(db, trackId, runId) {
     }
     updateRun.run(unanalyzed.length, 0, jobsAnalyzed, runId);
 
-    if (isPaused(trackId)) {
-      console.log(`[analyze/${trackId}] Paused after job ${job.id}`);
-      db.prepare("UPDATE scrape_runs SET status = 'paused' WHERE id = ?").run(runId);
+    if (isPaused(trackId) || isStopped(trackId)) {
+      const stopped = isStopped(trackId);
+      console.log(`[analyze/${trackId}] ${stopped ? 'Stopped' : 'Paused'} after job ${job.id}`);
+      db.prepare('UPDATE scrape_runs SET status = ? WHERE id = ?').run(stopped ? 'done' : 'paused', runId);
       return;
     }
   }

@@ -4,7 +4,7 @@ const { getDb } = require('../db');
 const { scrape } = require('../scraper');
 const { analyze } = require('../analyzer');
 const { getResumeText } = require('../resumes');
-const { resume, isPaused } = require('../pause');
+const { resume, isPaused, isStopped } = require('../pause');
 
 router.post('/:track', (req, res) => {
   const db = getDb();
@@ -126,9 +126,10 @@ async function runScrapeJob(db, trackId, runId) {
     }
     updateRun.run(jobsFound, jobsNew, jobsAnalyzed, runId);
 
-    if (isPaused(trackId)) {
-      console.log(`[scrape/${trackId}] Paused after job ${job.id}`);
-      db.prepare("UPDATE scrape_runs SET status = 'paused' WHERE id = ?").run(runId);
+    if (isPaused(trackId) || isStopped(trackId)) {
+      const stopped = isStopped(trackId);
+      console.log(`[scrape/${trackId}] ${stopped ? 'Stopped' : 'Paused'} after job ${job.id}`);
+      db.prepare('UPDATE scrape_runs SET status = ? WHERE id = ?').run(stopped ? 'done' : 'paused', runId);
       return;
     }
   }
