@@ -1,7 +1,7 @@
 require('dotenv').config();
 
 const DEEPSEEK_API_URL = 'https://api.deepseek.com/chat/completions';
-const MODEL = process.env.DEEPSEEK_MODEL || 'deepseek-chat';
+const MODEL = process.env.DEEPSEEK_MODEL || 'deepseek-v4-pro';
 const RATE_LIMIT_DELAY_MS = 200;
 
 async function analyze(resumeText, jobDescription) {
