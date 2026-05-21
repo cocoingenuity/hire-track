@@ -6,6 +6,8 @@ const STATUS_OPTIONS = [
   { v: 'Rejected',  label: 'Rejected',  icon: 'ti-x',        color: '#EF4444' },
 ];
 
+const HIDE_OPTION = { v: 'Not interested', label: 'Not interested', icon: 'ti-eye-off', color: '#6B7280' };
+
 function englishOnly(text) {
   if (!text) return text;
   const idx = text.indexOf(' / ');
@@ -195,6 +197,19 @@ export default function JobDetail({ job, onClose, onStatusChange }) {
             </button>
           );
         })}
+        {(() => {
+          const isHidden = job.status === HIDE_OPTION.v;
+          return (
+            <button
+              onClick={() => onStatusChange(job.id, isHidden ? null : HIDE_OPTION.v)}
+              className="ht-status-btn ht-status-btn-hide"
+              style={isHidden ? { background: HIDE_OPTION.color, borderColor: HIDE_OPTION.color, color: '#fff' } : {}}
+            >
+              <i className={`ti ${HIDE_OPTION.icon}`} />
+              {isHidden ? 'Hidden — click to restore' : HIDE_OPTION.label}
+            </button>
+          );
+        })()}
       </div>
 
       {/* Apply link */}

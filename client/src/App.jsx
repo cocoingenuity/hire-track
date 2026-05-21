@@ -58,6 +58,8 @@ export default function App() {
   // not on every re-render triggered by selectedJob — preventing pagination from resetting.
   const filteredJobs = useMemo(() => {
     const filtered = jobs.filter(job => {
+      // Hide 'Not interested' jobs unless the user is explicitly filtering to them
+      if (job.status === 'Not interested' && filters.status !== 'Not interested') return false;
       if (filters.tier   && job.match_tier !== filters.tier)   return false;
       if (filters.status && job.status     !== filters.status) return false;
       if (filters.days) {
@@ -100,11 +102,12 @@ export default function App() {
     days3:     jobs.filter(j => jobDate(j) >= cutoff3).length,
     days7:     jobs.filter(j => jobDate(j) >= cutoff7).length,
     days30:    jobs.filter(j => jobDate(j) >= cutoff30).length,
-    saved:     jobs.filter(j => j.status === 'Saved').length,
-    applied:   jobs.filter(j => j.status === 'Applied').length,
-    interview: jobs.filter(j => j.status === 'Interview').length,
-    offer:     jobs.filter(j => j.status === 'Offer').length,
-    rejected:  jobs.filter(j => j.status === 'Rejected').length,
+    saved:        jobs.filter(j => j.status === 'Saved').length,
+    applied:      jobs.filter(j => j.status === 'Applied').length,
+    interview:    jobs.filter(j => j.status === 'Interview').length,
+    offer:        jobs.filter(j => j.status === 'Offer').length,
+    rejected:     jobs.filter(j => j.status === 'Rejected').length,
+    notInterested: jobs.filter(j => j.status === 'Not interested').length,
   };
 
   function switchTrack(id) {
@@ -160,12 +163,13 @@ export default function App() {
   ];
 
   const STATUS_FILTERS = [
-    { v: '',          label: 'All statuses', icon: 'ti-inbox' },
-    { v: 'Saved',     label: 'Saved',        icon: 'ti-bookmark', count: sidebarCounts.saved },
-    { v: 'Applied',   label: 'Applied',      icon: 'ti-send',     count: sidebarCounts.applied },
-    { v: 'Interview', label: 'Interview',    icon: 'ti-users',    count: sidebarCounts.interview },
-    { v: 'Offer',     label: 'Offer',        icon: 'ti-trophy',   count: sidebarCounts.offer },
-    { v: 'Rejected',  label: 'Rejected',     icon: 'ti-x',        count: sidebarCounts.rejected },
+    { v: '',               label: 'All statuses',  icon: 'ti-inbox' },
+    { v: 'Saved',          label: 'Saved',          icon: 'ti-bookmark', count: sidebarCounts.saved },
+    { v: 'Applied',        label: 'Applied',        icon: 'ti-send',     count: sidebarCounts.applied },
+    { v: 'Interview',      label: 'Interview',      icon: 'ti-users',    count: sidebarCounts.interview },
+    { v: 'Offer',          label: 'Offer',          icon: 'ti-trophy',   count: sidebarCounts.offer },
+    { v: 'Rejected',       label: 'Rejected',       icon: 'ti-x',        count: sidebarCounts.rejected },
+    { v: 'Not interested', label: 'Not interested', icon: 'ti-eye-off',  count: sidebarCounts.notInterested },
   ];
 
   const DATE_FILTERS = [

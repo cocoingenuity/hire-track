@@ -281,6 +281,7 @@ body {
   transition: all 0.15s; font-family: inherit;
 }
 .ht-status-btn:hover { background: var(--ht-bg-3); border-color: var(--ht-border-2); color: var(--ht-text); }
+.ht-status-btn-hide { flex-basis: 100%; color: var(--ht-text-3); font-size: 11px; }
 
 /* Apply row */
 .ht-apply-row { padding: 0 18px 14px; flex-shrink: 0; }

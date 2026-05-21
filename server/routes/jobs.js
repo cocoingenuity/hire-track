@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { getDb } = require('../db');
 
-const VALID_STATUSES = ['Saved', 'Applied', 'Interview', 'Offer', 'Rejected'];
+const VALID_STATUSES = ['Saved', 'Applied', 'Interview', 'Offer', 'Rejected', 'Not interested'];
 
 router.get('/', (req, res) => {
   const db = getDb();
