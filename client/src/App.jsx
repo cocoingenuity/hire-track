@@ -18,6 +18,7 @@ export default function App() {
   const [activeTrack, setActiveTrack] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshMode, setRefreshMode] = useState('scrape');
+  const [isPausing, setIsPausing] = useState(false);
   const [jobs, setJobs]               = useState([]);
   const [selectedJob, setSelectedJob] = useState(null);
   const [filters, setFilters]         = useState({ tier: '', status: '', days: '' });
@@ -138,11 +139,14 @@ export default function App() {
   }
 
   function handlePause() {
-    fetch(`/api/pause/${activeTrack}`, { method: 'POST' });
+    setIsPausing(true);
+    fetch(`/api/pause/${activeTrack}`, { method: 'POST' })
+      .catch(() => setIsPausing(false));
   }
 
   function handleScrapeComplete() {
     setIsRefreshing(false);
+    setIsPausing(false);
     loadJobs(activeTrack);
   }
 
@@ -223,6 +227,7 @@ export default function App() {
         mode={refreshMode}
         onComplete={handleScrapeComplete}
         onPause={handlePause}
+        isPausing={isPausing}
       />
 
       {/* Main */}

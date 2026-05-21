@@ -27,7 +27,9 @@ app.use('/api/scrape', require('./routes/scrape'));
 app.use('/api/analyze', require('./routes/analyze'));
 
 app.post('/api/pause/:track', (req, res) => {
-  require('./pause').pause(req.params.track);
+  const { track } = req.params;
+  require('./pause').pause(track);
+  console.log(`[pause] flag set for track="${track}"`);
   res.json({ ok: true });
 });
 

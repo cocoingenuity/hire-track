@@ -56,6 +56,12 @@ async function runAnalysisJob(db, trackId, runId) {
   updateRun.run(unanalyzed.length, 0, jobsAnalyzed, runId);
 
   for (const job of unanalyzed) {
+    if (isPaused(trackId)) {
+      console.log(`[analyze/${trackId}] Paused before job ${job.id}`);
+      db.prepare("UPDATE scrape_runs SET status = 'paused' WHERE id = ?").run(runId);
+      return;
+    }
+
     const jobContext = [
       job.title,
       job.company && `Company: ${job.company}`,

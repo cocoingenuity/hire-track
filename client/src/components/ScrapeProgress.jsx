@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-export default function ScrapeProgress({ trackId, isActive, mode, onComplete, onPause }) {
+export default function ScrapeProgress({ trackId, isActive, mode, onComplete, onPause, isPausing }) {
   const [stats, setStats] = useState(null);
   const intervalRef = useRef(null);
 
@@ -43,8 +43,14 @@ export default function ScrapeProgress({ trackId, isActive, mode, onComplete, on
           {stats.error_msg || 'Failed'}
         </span>
       )}
-      <button className="ht-btn" style={{ padding: '3px 10px', fontSize: 12 }} onClick={onPause}>
-        <i className="ti ti-player-pause" /> Pause
+      <button
+        className="ht-btn"
+        style={{ padding: '3px 10px', fontSize: 12 }}
+        onClick={onPause}
+        disabled={isPausing}
+      >
+        <i className={`ti ${isPausing ? 'ti-loader-2' : 'ti-player-pause'}`} />
+        {isPausing ? ' Pausing…' : ' Pause'}
       </button>
     </div>
   );
