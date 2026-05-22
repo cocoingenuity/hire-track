@@ -1,7 +1,25 @@
 node_modules/
 client/node_modules/
+
+# Environment
 .env
+
+# Database and user data
 data/
-resumes/
-.superpowers/
 *.db
+
+# Resumes (contain personal information)
+resumes/
+
+# Runtime logs
+*.log
+*.err
+
+# Dev screenshots and HTML prototypes
+screenshot*.png
+screenshot*.js
+hiretrack_*.html
+
+# Claude Code session data
+.claude/
+.superpowers/
