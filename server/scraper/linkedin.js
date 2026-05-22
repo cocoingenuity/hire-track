@@ -63,6 +63,7 @@ function shouldFilter(title, description, trackId) {
   if (FRENCH_TITLE_RE.test(title || '')) return true;
   const tl = (title || '').toLowerCase();
   const dl = (description || '').toLowerCase();
+  if (tl.includes('bilingual')) return true;
   if (DESC_BLOCKERS.some(phrase => dl.includes(phrase))) return true;
   if (dl.includes('5 years') && dl.includes('clearance')) return true;
 
