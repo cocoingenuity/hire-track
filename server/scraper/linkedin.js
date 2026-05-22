@@ -56,6 +56,8 @@ const DESC_BLOCKERS = [
   'g license required', 'valid g licence', 'g driver', 'full g',
   // Over-qualified experience requirements
   '8 years', '8+ years', '10 years', '10 ans',
+  // Domain-specific blockers (government/pension/business analysis)
+  'cpp', 'canada pension plan', 'joint application design', 'jad sessions',
 ];
 
 // Distinctly French words that don't appear in English — 2+ hits → French description
