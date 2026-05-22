@@ -54,7 +54,17 @@ const DESC_BLOCKERS = [
   // Driver's license
   "valid g driver's license", "g driver's license required",
   'g license required', 'valid g licence', 'g driver', 'full g',
+  // Over-qualified experience requirements
+  '10 years', '10 ans',
 ];
+
+// Distinctly French words that don't appear in English — 2+ hits → French description
+const FRENCH_DESC_RE = /\b(vous|nous|votre|notre|emploi|compétences|équipe|travail|maîtrise|vos|cherch|offrons|postuler|candidature|expérience\s+en|poste\s+de|au\s+sein)\b/gi;
+
+function isFrenchDescription(text) {
+  const matches = text.match(FRENCH_DESC_RE);
+  return matches !== null && matches.length >= 2;
+}
 
 // Admin track allowlist — title must match at least one of these role types
 const ADMIN_TITLE_RE = /\b(administrative\s+assistant|admin\s+assistant|office\s+coordinator|operations?\s+coordinator|office\s+administrator|executive\s+assistant|program\s+coordinator|project\s+coordinator|office\s+manager|receptionist|administrative\s+coordinator)\b/i;
@@ -66,6 +76,7 @@ function shouldFilter(title, description, trackId) {
   if (tl.includes('bilingual')) return true;
   if (DESC_BLOCKERS.some(phrase => dl.includes(phrase))) return true;
   if (dl.includes('5 years') && dl.includes('clearance')) return true;
+  if (isFrenchDescription(dl)) return true;
 
   if (trackId === 'admin') {
     return !ADMIN_TITLE_RE.test(title || '');
