@@ -59,8 +59,9 @@ export default function App() {
   // not on every re-render triggered by selectedJob — preventing pagination from resetting.
   const filteredJobs = useMemo(() => {
     const filtered = jobs.filter(job => {
-      // Hide 'Not interested' jobs unless the user is explicitly filtering to them
+      // Hide 'Not interested' and 'Applied' jobs unless explicitly filtered to them
       if (job.status === 'Not interested' && filters.status !== 'Not interested') return false;
+      if (job.status === 'Applied' && filters.status !== 'Applied') return false;
       if (filters.tier   && job.match_tier !== filters.tier)   return false;
       if (filters.status && job.status     !== filters.status) return false;
       if (filters.days) {
