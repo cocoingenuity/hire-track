@@ -176,25 +176,20 @@ Each track applies its own title filter:
 
 - **IT track** — uses a keyword allowlist (`support`, `network`, `technician`, `helpdesk`, `desktop`, `infrastructure`, `security`, `analyst`, `administrator`, `engineer`, `specialist`, `coordinator`, `technical`, `cyber`, `cloud`, `data`, `software`, `developer`, `database`, `IT`). Jobs with no matching keyword are rejected. A secondary domain-blocker list vetoes false positives (e.g. `mechanical engineer`, `marketing`, `recruiter`).
 - **Admin track** — uses a strict role allowlist: administrative assistant, office coordinator, operations coordinator, office administrator, executive assistant, program/project coordinator, office manager, receptionist, administrative coordinator. Any title not matching this list is rejected.
-- **All tracks** — French-language titles are rejected via a word-boundary regex of common French job title words.
-- **All tracks** — Titles containing `bilingual` are rejected.
+- **All tracks** — A built-in French-language title detector and a `bilingual` title check are included as examples. Remove or replace these if they don't apply to your situation.
 
 ### Description filtering
 
-A set of phrase blockers is checked against the job's description snippet. Any match rejects the job entirely. The default blockers cover:
+A set of phrase blockers is checked against the job's description snippet. Any match rejects the job entirely.
 
-- Security clearance requirements (`secret clearance`, `top secret`, `top-secret`, `reliability clearance required`)
-- Citizenship / residency requirements (`must be a canadian citizen`, `canadian citizenship required`, `permanent resident required`, `pr required`)
-- Language requirements (`bilingual`, `french required`, `en français`, `bilingue`)
-- Driver's licence requirements (`valid g driver's license`, `g driver's license required`, `g driver`, `valid g licence`, `full g`)
-- High experience thresholds (`8 years`, `8+ years`, `10 years`, `10 ans`)
-- Domain-specific keywords (`cpp`, `canada pension plan`, `joint application design`, `jad sessions`)
+> **The default blockers in `server/scraper/linkedin.js` are examples — edit them to match your own constraints** (location, language requirements, clearance eligibility, experience level, domain exclusions, etc.). What's irrelevant for one person's job search may be perfectly fine for another's.
 
-A compound check also blocks any description containing both `5 years` and `clearance`.
+The file ships with example blockers for things like clearance requirements, residency requirements, language requirements, driver's licence requirements, experience thresholds, and domain-specific keywords. A compound check (two phrases both present in the description) and a French-language description detector are also included as examples.
 
-Additionally, descriptions containing 2 or more distinctly French words are blocked as predominantly French-language postings.
-
-To add your own blockers, edit the `DESC_BLOCKERS` array in `server/scraper/linkedin.js`.
+To customise:
+- Edit `DESC_BLOCKERS` in `server/scraper/linkedin.js` to add or remove phrase blockers
+- Adjust or remove the compound checks and language detector in `shouldFilter()` to suit your needs
+- Restart the server after any changes
 
 ---
 
