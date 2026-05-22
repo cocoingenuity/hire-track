@@ -56,12 +56,21 @@ const DESC_BLOCKERS = [
   'g license required', 'valid g licence', 'g driver', 'full g',
 ];
 
-function shouldFilter(title, description) {
+// Admin track allowlist — title must match at least one of these role types
+const ADMIN_TITLE_RE = /\b(administrative\s+assistant|admin\s+assistant|office\s+coordinator|operations?\s+coordinator|office\s+administrator|executive\s+assistant|program\s+coordinator|project\s+coordinator|office\s+manager|receptionist|administrative\s+coordinator)\b/i;
+
+function shouldFilter(title, description, trackId) {
   if (FRENCH_TITLE_RE.test(title || '')) return true;
   const tl = (title || '').toLowerCase();
   const dl = (description || '').toLowerCase();
   if (DESC_BLOCKERS.some(phrase => dl.includes(phrase))) return true;
   if (dl.includes('5 years') && dl.includes('clearance')) return true;
+
+  if (trackId === 'admin') {
+    return !ADMIN_TITLE_RE.test(title || '');
+  }
+
+  // IT track: domain blockers + IT keyword allowlist
   if (TITLE_DOMAIN_BLOCKERS.some(phrase => tl.includes(phrase))) return true;
   // Block "senior" only when paired with a clearly senior-level role type.
   // senior + analyst/specialist/support/consultant/technician are allowed.
@@ -165,7 +174,7 @@ async function scrape(track) {
               return '';
             }).catch(() => '');
 
-            if (shouldFilter(title, description)) {
+            if (shouldFilter(title, description, track.id)) {
               console.log(`[linkedin] FILTERED "${title.substring(0, 45)}"`);
               continue;
             }
