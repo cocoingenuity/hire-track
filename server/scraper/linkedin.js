@@ -43,18 +43,17 @@ const TITLE_DOMAIN_BLOCKERS = [
 ];
 
 const DESC_BLOCKERS = [
-  'secret clearance',
-  'top secret',
-  'reliability clearance required',
-  'must be canadian citizen',
-  'canadian citizenship required',
-  'must be pr',
-  'pr required',
-  'bilingual',
-  'french required',
-  "valid g driver's license",
-  "g driver's license required",
-  'g license required',
+  // Clearance
+  'secret clearance', 'top secret', 'reliability clearance required',
+  // Citizenship / residency
+  'must be a canadian citizen', 'must be canadian citizen',
+  'canadian citizenship required', 'must be pr', 'pr required',
+  'permanent resident required',
+  // Language
+  'bilingual', 'french required', 'en français', 'bilingue',
+  // Driver's license
+  "valid g driver's license", "g driver's license required",
+  'g license required', 'valid g licence', 'g driver', 'full g',
 ];
 
 function shouldFilter(title, description) {
@@ -62,6 +61,7 @@ function shouldFilter(title, description) {
   const tl = (title || '').toLowerCase();
   const dl = (description || '').toLowerCase();
   if (DESC_BLOCKERS.some(phrase => dl.includes(phrase))) return true;
+  if (dl.includes('5 years') && dl.includes('clearance')) return true;
   if (TITLE_DOMAIN_BLOCKERS.some(phrase => tl.includes(phrase))) return true;
   // Block "senior" only when paired with a clearly senior-level role type.
   // senior + analyst/specialist/support/consultant/technician are allowed.
