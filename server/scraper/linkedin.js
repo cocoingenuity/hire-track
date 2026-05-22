@@ -44,7 +44,7 @@ const TITLE_DOMAIN_BLOCKERS = [
 
 const DESC_BLOCKERS = [
   // Clearance
-  'secret clearance', 'top secret', 'reliability clearance required',
+  'secret clearance', 'top secret', 'top-secret', 'reliability clearance required',
   // Citizenship / residency
   'must be a canadian citizen', 'must be canadian citizen',
   'canadian citizenship required', 'must be pr', 'pr required',
@@ -55,7 +55,7 @@ const DESC_BLOCKERS = [
   "valid g driver's license", "g driver's license required",
   'g license required', 'valid g licence', 'g driver', 'full g',
   // Over-qualified experience requirements
-  '10 years', '10 ans',
+  '8 years', '8+ years', '10 years', '10 ans',
 ];
 
 // Distinctly French words that don't appear in English — 2+ hits → French description
