@@ -44,6 +44,7 @@ export default function App() {
   const [customTab, setCustomTab]     = useState(null); // { id, label } | null
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResumeTrack, setSearchResumeTrack] = useState('');
+  const [searchError, setSearchError] = useState('');
 
   useEffect(() => {
     fetch('/api/tracks')
@@ -164,6 +165,7 @@ export default function App() {
   function handleSearch(e) {
     e.preventDefault();
     if (!searchQuery.trim() || isRefreshing) return;
+    setSearchError('');
     setRefreshMode('scrape');
     setIsRefreshing(true);
     fetch('/api/search', {
@@ -171,8 +173,9 @@ export default function App() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query: searchQuery.trim(), resume_track: searchResumeTrack }),
     })
-      .then(r => r.json())
+      .then(r => r.ok ? r.json() : r.json().then(e => Promise.reject(e)))
       .then(data => {
+        if (!data.track_id) throw new Error('No track_id in response');
         const tab = { id: data.track_id, label: searchQuery.trim() };
         setCustomTab(tab);
         setActiveTrack(data.track_id);
@@ -180,7 +183,10 @@ export default function App() {
         setFilters({ tier: '', status: '', days: '' });
         setSort('score');
       })
-      .catch(() => setIsRefreshing(false));
+      .catch(err => {
+        setIsRefreshing(false);
+        setSearchError(err?.error || err?.message || 'Search failed — is the server running?');
+      });
   }
 
   function toggleSelectJob(jobId) {
@@ -415,9 +421,9 @@ export default function App() {
           <input
             type="text"
             value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
+            onChange={e => { setSearchQuery(e.target.value); setSearchError(''); }}
             placeholder="Search any job title…"
-            className="ht-search-input"
+            className={`ht-search-input${searchError ? ' ht-search-input-error' : ''}`}
             disabled={isRefreshing}
           />
           <select
@@ -436,8 +442,11 @@ export default function App() {
             className="ht-btn"
           >
             <i className="ti ti-search" />
-            Search
+            {isRefreshing && customTab ? 'Searching…' : 'Search'}
           </button>
+          {searchError && (
+            <span className="ht-search-error">{searchError}</span>
+          )}
         </form>
 
         <div className="ht-topbar-actions">

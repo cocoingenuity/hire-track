@@ -95,6 +95,8 @@ body {
   cursor: pointer; max-width: 130px;
 }
 .ht-search-select:disabled { opacity: 0.45; cursor: not-allowed; }
+.ht-search-input-error { border-color: #993C1D !important; background: #FAECE7 !important; }
+.ht-search-error { font-size: 12px; color: #993C1D; white-space: nowrap; flex-shrink: 0; }
 .ht-tab-custom { display: flex; align-items: center; gap: 5px; }
 .ht-tab-custom i { font-size: 12px; }
 .ht-tab-custom.active { background: #E8F6F1; color: var(--ht-green-dark); }
