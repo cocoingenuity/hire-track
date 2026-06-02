@@ -27,6 +27,7 @@ app.use('/api/tracks',   require('./routes/tracks'));
 app.use('/api/jobs',     require('./routes/jobs'));
 app.use('/api/scrape',   require('./routes/scrape'));
 app.use('/api/analyze',  require('./routes/analyze'));
+app.use('/api/search',   require('./routes/search'));
 app.use('/api/strategy', require('./routes/strategy'));
 app.use('/api/profile',  require('./routes/profile'));
 

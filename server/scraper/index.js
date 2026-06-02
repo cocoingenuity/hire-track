@@ -51,4 +51,16 @@ async function scrape(trackId, onJob) {
   await scrapeLinkedIn(track, onJob);
 }
 
-module.exports = { scrape };
+async function scrapeCustom(query, trackId) {
+  if (process.env.DRY_RUN === 'true') {
+    const fixtures = require('./fixtures.json');
+    return (fixtures['it-support'] || []).map(job => ({ ...job, source: 'fixture' }));
+  }
+
+  const { scrape: scrapeLinkedIn } = require('./linkedin');
+  const jobs = await scrapeLinkedIn({ id: trackId, queries: [`${query} Ottawa`] });
+  console.log(`[scraper] custom="${query}" linkedin=${jobs.length}`);
+  return jobs;
+}
+
+module.exports = { scrape, scrapeCustom };

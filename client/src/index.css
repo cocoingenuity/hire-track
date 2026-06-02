@@ -74,6 +74,31 @@ body {
 .ht-btn-dark { background: var(--ht-dark); border-color: var(--ht-dark); color: #fff; font-weight: 500; }
 .ht-btn-dark:hover:not(:disabled) { background: #172E27; border-color: #172E27; }
 
+/* ─── Search form ────────────────────────────────────────────── */
+.ht-search-form {
+  display: flex; align-items: center; gap: 6px;
+  flex: 1; max-width: 400px; margin: 0 12px;
+}
+.ht-search-input {
+  flex: 1; min-width: 0;
+  padding: 6px 10px; border-radius: var(--ht-r-md);
+  border: 0.5px solid var(--ht-border-2); background: var(--ht-bg-2);
+  font-family: inherit; font-size: 13px; color: var(--ht-text);
+}
+.ht-search-input::placeholder { color: var(--ht-text-3); }
+.ht-search-input:focus { outline: none; border-color: var(--ht-green); background: var(--ht-bg); }
+.ht-search-input:disabled { opacity: 0.45; }
+.ht-search-select {
+  padding: 6px 8px; border-radius: var(--ht-r-md); flex-shrink: 0;
+  border: 0.5px solid var(--ht-border-2); background: var(--ht-bg-2);
+  font-family: inherit; font-size: 13px; color: var(--ht-text-2);
+  cursor: pointer; max-width: 130px;
+}
+.ht-search-select:disabled { opacity: 0.45; cursor: not-allowed; }
+.ht-tab-custom { display: flex; align-items: center; gap: 5px; }
+.ht-tab-custom i { font-size: 12px; }
+.ht-tab-custom.active { background: #E8F6F1; color: var(--ht-green-dark); }
+
 /* ─── Progress banner ────────────────────────────────────────── */
 .ht-progress-banner {
   display: flex; align-items: center; gap: 12px;
