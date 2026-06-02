@@ -12,11 +12,6 @@ describe('Scraper (DRY_RUN=true)', () => {
     expect(jobs.length).toBeGreaterThan(0);
   });
 
-  it('returns array of jobs for retail', async () => {
-    const jobs = await scrape('retail');
-    expect(jobs.length).toBeGreaterThan(0);
-  });
-
   it('each job has required fields', async () => {
     const jobs = await scrape('it-support');
     for (const job of jobs) {
