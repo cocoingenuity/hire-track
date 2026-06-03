@@ -89,6 +89,11 @@ function getDb() {
     try { _db.prepare('ALTER TABLE jobs ADD COLUMN teer_level INTEGER').run(); } catch {}
     _db.pragma('user_version = 3');
   }
+  if (ver < 4) {
+    try { _db.prepare("ALTER TABLE user_strategy ADD COLUMN employment_type TEXT DEFAULT 'any'").run(); } catch {}
+    try { _db.prepare("ALTER TABLE user_strategy ADD COLUMN work_model TEXT DEFAULT '[]'").run(); } catch {}
+    _db.pragma('user_version = 4');
+  }
 
   // Every startup: abandon any scrape runs that were left in 'running' state by a
   // previous server process (crash, restart, Ctrl-C). Without this, POST /scrape/:track

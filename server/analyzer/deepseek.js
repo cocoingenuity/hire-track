@@ -6,19 +6,21 @@ const RATE_LIMIT_DELAY_MS = 200;
 
 function buildStrategySection(strategy) {
   const s = strategy || {};
-  const visaStatus    = s.visa_status          || 'PGWP';
-  const languages     = Array.isArray(s.languages) ? s.languages : ['English'];
-  const hasVehicle    = !!s.has_vehicle;
-  const hasClearance  = !!s.security_clearance;
-  const targetRoles   = s.target_roles         || '';
-  const expLevel      = s.experience_level     || 'Entry-level';
-  const blacklisted   = s.blacklisted_keywords || '';
+  const visaStatus      = s.visa_status          || 'PGWP';
+  const languages       = Array.isArray(s.languages) ? s.languages : ['English'];
+  const hasVehicle      = !!s.has_vehicle;
+  const hasClearance    = !!s.security_clearance;
+  const targetRoles     = s.target_roles         || '';
+  const expLevels       = Array.isArray(s.experience_level) ? s.experience_level : [s.experience_level || 'Entry-level'];
+  const blacklisted     = s.blacklisted_keywords || '';
+  const employmentType  = s.employment_type      || 'any';
+  const workModel       = Array.isArray(s.work_model) ? s.work_model : [];
 
   const blockers = [];
   const needsPR = visaStatus !== 'PR' && visaStatus !== 'Citizen';
   if (needsPR) {
     blockers.push(
-      `1. Job requires Canadian Permanent Residency or Citizenship (candidate is on ${visaStatus} and does not qualify)`
+      `${blockers.length + 1}. Job requires Canadian Permanent Residency or Citizenship (candidate is on ${visaStatus} and does not qualify)`
     );
   }
   if (!hasClearance) {
@@ -36,15 +38,22 @@ function buildStrategySection(strategy) {
       `${blockers.length + 1}. Job requires a G driver's license or personal vehicle (candidate does not have one)`
     );
   }
+  if (employmentType === 'permanent') {
+    blockers.push(
+      `${blockers.length + 1}. Job is a short-term contract, temporary, or independent contractor role (candidate seeks permanent full-time employment only)`
+    );
+  }
 
   const candidateContext = [
     `- Immigration status: ${visaStatus}`,
     `- Languages: ${languages.join(', ')}`,
     `- Has vehicle / G license: ${hasVehicle ? 'Yes' : 'No'}`,
     `- Security clearance eligible: ${hasClearance ? 'Yes' : 'No'}`,
-    targetRoles   && `- Target roles: ${targetRoles}`,
-    expLevel      && `- Experience level: ${expLevel}`,
-    blacklisted   && `- Deprioritize roles containing: ${blacklisted}`,
+    targetRoles              && `- Target roles: ${targetRoles}`,
+    expLevels.length > 0     && `- Experience level: ${expLevels.join(', ')}`,
+    employmentType !== 'any' && `- Employment type preference: ${employmentType === 'permanent' ? 'Permanent / Full-time only' : 'Open to contracts'}`,
+    workModel.length > 0     && `- Work model preference: ${workModel.join(', ')}`,
+    blacklisted              && `- Deprioritize roles containing: ${blacklisted}`,
   ].filter(Boolean).join('\n');
 
   const blacklistInstruction = blacklisted

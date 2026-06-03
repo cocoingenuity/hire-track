@@ -6,13 +6,16 @@ const DEFAULTS = {
   hasDriversLicense: false,
   securityClearanceEligible: false,
   targetRoles: 'IT Support, Help Desk, NOC Analyst',
-  experienceLevel: 'Entry-level',
+  experienceLevel: ['Entry-level'],
   blacklistedKeywords: 'Manager, Sales, Software Developer',
+  employmentType: 'any',
+  workModel: [],
 };
 
 const VISA_OPTIONS = ['PR', 'Citizen', 'PGWP', 'Student Visa', 'Other'];
 const LANGUAGE_OPTIONS = ['English', 'French', 'Mandarin', 'Other'];
 const EXPERIENCE_OPTIONS = ['Entry-level', 'Mid-level', 'Senior'];
+const WORK_MODEL_OPTIONS = ['Remote', 'Hybrid', 'On-site'];
 
 function Field({ label, hint, children }) {
   return (
@@ -38,6 +41,43 @@ function Section({ title, icon, children }) {
   );
 }
 
+function Checkbox({ checked, onChange, label }) {
+  return (
+    <label className="flex items-center gap-2 cursor-pointer text-sm select-none" style={{ color: checked ? 'var(--ht-text)' : 'var(--ht-text-2)' }}>
+      <span
+        className="flex items-center justify-center w-4 h-4 rounded flex-shrink-0 transition-colors"
+        style={{
+          background: checked ? 'var(--ht-green)' : 'var(--ht-bg-3)',
+          border: `0.5px solid ${checked ? 'var(--ht-green)' : 'var(--ht-border-2)'}`,
+        }}
+        onClick={onChange}
+      >
+        {checked && <i className="ti ti-check" style={{ fontSize: 10, color: '#fff' }} />}
+      </span>
+      {label}
+    </label>
+  );
+}
+
+function Radio({ checked, onChange, label }) {
+  return (
+    <label className="flex items-center gap-2 cursor-pointer text-sm select-none" style={{ color: checked ? 'var(--ht-text)' : 'var(--ht-text-2)' }}>
+      <span
+        className="flex items-center justify-center w-4 h-4 flex-shrink-0 transition-colors"
+        style={{
+          borderRadius: '50%',
+          background: checked ? 'var(--ht-green)' : 'var(--ht-bg-3)',
+          border: `0.5px solid ${checked ? 'var(--ht-green)' : 'var(--ht-border-2)'}`,
+        }}
+        onClick={onChange}
+      >
+        {checked && <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#fff', display: 'block' }} />}
+      </span>
+      {label}
+    </label>
+  );
+}
+
 const inputCls = 'w-full px-3 py-2 rounded-lg text-sm font-sans transition-colors outline-none';
 const inputStyle = {
   background: 'var(--ht-bg-2)',
@@ -46,16 +86,22 @@ const inputStyle = {
   fontFamily: 'var(--ht-font-sans)',
 };
 
-// Map backend snake_case keys to frontend camelCase form state
 function apiToForm(data) {
+  const expLevel = data.experience_level;
+  const experienceLevel = Array.isArray(expLevel)
+    ? expLevel
+    : (expLevel ? [expLevel] : DEFAULTS.experienceLevel);
+
   return {
     visaStatus:               data.visa_status          ?? DEFAULTS.visaStatus,
     languages:                data.languages             ?? DEFAULTS.languages,
     hasDriversLicense:        data.has_vehicle           ?? DEFAULTS.hasDriversLicense,
     securityClearanceEligible:data.security_clearance    ?? DEFAULTS.securityClearanceEligible,
     targetRoles:              data.target_roles          ?? DEFAULTS.targetRoles,
-    experienceLevel:          data.experience_level      ?? DEFAULTS.experienceLevel,
+    experienceLevel,
     blacklistedKeywords:      data.blacklisted_keywords  ?? DEFAULTS.blacklistedKeywords,
+    employmentType:           data.employment_type       ?? DEFAULTS.employmentType,
+    workModel:                data.work_model            ?? DEFAULTS.workModel,
   };
 }
 
@@ -87,6 +133,26 @@ export default function StrategySettings({ onClose }) {
     setSaved(false);
   }
 
+  function toggleExperienceLevel(level) {
+    setForm(f => {
+      const next = f.experienceLevel.includes(level)
+        ? f.experienceLevel.filter(l => l !== level)
+        : [...f.experienceLevel, level];
+      return { ...f, experienceLevel: next };
+    });
+    setSaved(false);
+  }
+
+  function toggleWorkModel(model) {
+    setForm(f => {
+      const next = f.workModel.includes(model)
+        ? f.workModel.filter(m => m !== model)
+        : [...f.workModel, model];
+      return { ...f, workModel: next };
+    });
+    setSaved(false);
+  }
+
   function handleSave(e) {
     e.preventDefault();
     setError('');
@@ -101,6 +167,8 @@ export default function StrategySettings({ onClose }) {
         target_roles:         form.targetRoles,
         experience_level:     form.experienceLevel,
         blacklisted_keywords: form.blacklistedKeywords,
+        employment_type:      form.employmentType,
+        work_model:           form.workModel,
       }),
     })
       .then(r => r.ok ? r.json() : Promise.reject(r.status))
@@ -149,61 +217,31 @@ export default function StrategySettings({ onClose }) {
 
             <Field label="Languages">
               <div className="flex flex-wrap gap-3 mt-0.5">
-                {LANGUAGE_OPTIONS.map(lang => {
-                  const checked = form.languages.includes(lang);
-                  return (
-                    <label
-                      key={lang}
-                      className="flex items-center gap-2 cursor-pointer text-sm select-none"
-                      style={{ color: checked ? 'var(--ht-text)' : 'var(--ht-text-2)' }}
-                    >
-                      <span
-                        className="flex items-center justify-center w-4 h-4 rounded flex-shrink-0 transition-colors"
-                        style={{
-                          background: checked ? 'var(--ht-green)' : 'var(--ht-bg-3)',
-                          border: `0.5px solid ${checked ? 'var(--ht-green)' : 'var(--ht-border-2)'}`,
-                        }}
-                        onClick={() => toggleLanguage(lang)}
-                      >
-                        {checked && <i className="ti ti-check" style={{ fontSize: 10, color: '#fff' }} />}
-                      </span>
-                      {lang}
-                    </label>
-                  );
-                })}
+                {LANGUAGE_OPTIONS.map(lang => (
+                  <Checkbox
+                    key={lang}
+                    checked={form.languages.includes(lang)}
+                    onChange={() => toggleLanguage(lang)}
+                    label={lang}
+                  />
+                ))}
               </div>
             </Field>
 
             <Field label="Mobility">
-              <label className="flex items-center gap-2.5 cursor-pointer text-sm select-none" style={{ color: 'var(--ht-text-2)' }}>
-                <span
-                  className="flex items-center justify-center w-4 h-4 rounded flex-shrink-0 transition-colors"
-                  style={{
-                    background: form.hasDriversLicense ? 'var(--ht-green)' : 'var(--ht-bg-3)',
-                    border: `0.5px solid ${form.hasDriversLicense ? 'var(--ht-green)' : 'var(--ht-border-2)'}`,
-                  }}
-                  onClick={() => set('hasDriversLicense', !form.hasDriversLicense)}
-                >
-                  {form.hasDriversLicense && <i className="ti ti-check" style={{ fontSize: 10, color: '#fff' }} />}
-                </span>
-                Has G Driver's License / Personal Vehicle
-              </label>
+              <Checkbox
+                checked={form.hasDriversLicense}
+                onChange={() => set('hasDriversLicense', !form.hasDriversLicense)}
+                label="Has G Driver's License / Personal Vehicle"
+              />
             </Field>
 
             <Field label="Security Clearance">
-              <label className="flex items-center gap-2.5 cursor-pointer text-sm select-none" style={{ color: 'var(--ht-text-2)' }}>
-                <span
-                  className="flex items-center justify-center w-4 h-4 rounded flex-shrink-0 transition-colors"
-                  style={{
-                    background: form.securityClearanceEligible ? 'var(--ht-green)' : 'var(--ht-bg-3)',
-                    border: `0.5px solid ${form.securityClearanceEligible ? 'var(--ht-green)' : 'var(--ht-border-2)'}`,
-                  }}
-                  onClick={() => set('securityClearanceEligible', !form.securityClearanceEligible)}
-                >
-                  {form.securityClearanceEligible && <i className="ti ti-check" style={{ fontSize: 10, color: '#fff' }} />}
-                </span>
-                Security Clearance Eligible
-              </label>
+              <Checkbox
+                checked={form.securityClearanceEligible}
+                onChange={() => set('securityClearanceEligible', !form.securityClearanceEligible)}
+                label="Security Clearance Eligible"
+              />
             </Field>
           </Section>
 
@@ -221,15 +259,51 @@ export default function StrategySettings({ onClose }) {
               />
             </Field>
 
-            <Field label="Experience Level">
-              <select
-                value={form.experienceLevel}
-                onChange={e => set('experienceLevel', e.target.value)}
-                className={inputCls}
-                style={inputStyle}
-              >
-                {EXPERIENCE_OPTIONS.map(v => <option key={v} value={v}>{v}</option>)}
-              </select>
+            <Field label="Experience Level" hint="Select all levels you're open to">
+              <div className="flex flex-wrap gap-3 mt-0.5">
+                {EXPERIENCE_OPTIONS.map(level => (
+                  <Checkbox
+                    key={level}
+                    checked={form.experienceLevel.includes(level)}
+                    onChange={() => toggleExperienceLevel(level)}
+                    label={level}
+                  />
+                ))}
+              </div>
+            </Field>
+
+            <Field label="Employment Type">
+              <div className="flex flex-col gap-2.5 mt-0.5">
+                <Radio
+                  checked={form.employmentType === 'any'}
+                  onChange={() => set('employmentType', 'any')}
+                  label="Open to Contracts"
+                />
+                <Radio
+                  checked={form.employmentType === 'permanent'}
+                  onChange={() => set('employmentType', 'permanent')}
+                  label="Permanent / Full-time Only"
+                />
+                {form.employmentType === 'permanent' && (
+                  <p className="text-xs" style={{ color: '#F59E0B', marginLeft: 22 }}>
+                    <i className="ti ti-alert-triangle" style={{ fontSize: 11, marginRight: 4 }} />
+                    AI will hard-block short-term contract and temporary roles
+                  </p>
+                )}
+              </div>
+            </Field>
+
+            <Field label="Work Model" hint="Select all you're open to — leave blank for no preference">
+              <div className="flex flex-wrap gap-3 mt-0.5">
+                {WORK_MODEL_OPTIONS.map(model => (
+                  <Checkbox
+                    key={model}
+                    checked={form.workModel.includes(model)}
+                    onChange={() => toggleWorkModel(model)}
+                    label={model}
+                  />
+                ))}
+              </div>
             </Field>
 
             <Field label="Blacklisted Keywords" hint="Jobs containing these terms will be deprioritised">
