@@ -5,10 +5,10 @@ function formatDate(date_posted) {
 }
 
 const PILL = {
-  'Strong Match': { cls: 'ht-score-pill-strong', label: 'Strong' },
-  'Good Match':   { cls: 'ht-score-pill-good',   label: 'Good'   },
-  'Stretch':      { cls: 'ht-score-pill-stretch', label: 'Stretch'},
-  'Skip':         { cls: 'ht-score-pill-skip',    label: 'Skip'   },
+  'Strong Match': { cls: 'ht-score-pill-strong' },
+  'Good Match':   { cls: 'ht-score-pill-good'   },
+  'Stretch':      { cls: 'ht-score-pill-stretch' },
+  'Skip':         { cls: 'ht-score-pill-skip'    },
 };
 
 export default function JobCard({ job, isSelected, onSelect, onStatusChange, isChecked, isAnalyzing, onToggleCheck }) {
@@ -32,19 +32,19 @@ export default function JobCard({ job, isSelected, onSelect, onStatusChange, isC
       onClick={() => onSelect(job)}
       className={`ht-job-card${isSelected ? ' selected' : ''}`}
     >
-      {/* Checkbox */}
+      {/* Checkbox — w-5 h-5 matches the Select All in the header */}
       <span
-        className="flex items-center justify-center w-4 h-4 rounded flex-shrink-0 transition-colors"
+        className="flex items-center justify-center w-5 h-5 rounded flex-shrink-0 transition-colors cursor-pointer"
         style={{
           background: isChecked ? 'var(--ht-green)' : 'var(--ht-bg-3)',
-          border: `0.5px solid ${isChecked ? 'var(--ht-green)' : 'var(--ht-border-2)'}`,
-          marginRight: 10,
+          border: `1px solid ${isChecked ? 'var(--ht-green)' : 'var(--ht-border-2)'}`,
         }}
         onClick={handleCheck}
       >
-        {isChecked && <i className="ti ti-check" style={{ fontSize: 10, color: '#fff' }} />}
+        {isChecked && <i className="ti ti-check" style={{ fontSize: 11, color: '#fff' }} />}
       </span>
 
+      {/* Title + meta */}
       <div className="ht-job-card-left">
         <div className="ht-job-title">{job.title}</div>
         <div className="ht-job-meta">
@@ -58,6 +58,7 @@ export default function JobCard({ job, isSelected, onSelect, onStatusChange, isC
         </div>
       </div>
 
+      {/* Score pill + bookmark */}
       <div className="ht-job-card-right">
         {isAnalyzing ? (
           <div className="ht-score-pill ht-score-pill-skip" style={{ opacity: 0.6 }} title="Analyzing…">
