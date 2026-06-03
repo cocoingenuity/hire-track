@@ -5,6 +5,7 @@ const { scrape } = require('../scraper');
 const { analyze } = require('../analyzer');
 const { getResumeText } = require('../resumes');
 const { resume, isPaused, isStopped } = require('../pause');
+const { getStrategy } = require('../strategy');
 
 router.post('/:track', (req, res) => {
   const db = getDb();
@@ -82,6 +83,8 @@ async function runScrapeJob(db, trackId, runId) {
     : [];
   console.log(`[scrape/${trackId}] ${unanalyzed.length} new jobs to analyze`);
 
+  const strategy = getStrategy(db);
+
   for (const job of unanalyzed) {
     if (resumeText) {
       const jobContext = [
@@ -93,7 +96,7 @@ async function runScrapeJob(db, trackId, runId) {
 
       console.log(`[analyzer] → "${job.title.substring(0, 50)}" (id=${job.id})`);
       try {
-        const result = await analyze(resumeText, jobContext);
+        const result = await analyze(resumeText, jobContext, strategy);
         console.log(`[analyzer] ✓ score=${result.match_score} tier="${result.match_tier}"`);
         db.prepare(`
           UPDATE jobs SET

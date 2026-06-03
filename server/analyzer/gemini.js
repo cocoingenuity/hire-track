@@ -7,7 +7,7 @@ const model = genAI.getGenerativeModel({ model: modelName });
 
 const RATE_LIMIT_DELAY_MS = 4000; // 15 RPM free-tier cap → 1 req / 4 s minimum
 
-async function analyze(resumeText, jobDescription) {
+async function analyze(resumeText, jobDescription, strategy = {}) {
   const jobTitle = jobDescription.split('\n')[0].substring(0, 60);
 
   if (process.env.DRY_RUN === 'true') {

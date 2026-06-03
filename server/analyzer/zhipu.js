@@ -4,7 +4,7 @@ const ZHIPU_API_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
 const MODEL = process.env.ZHIPU_MODEL || 'glm-4-flash';
 const RATE_LIMIT_DELAY_MS = 500; // glm-4-flash is free with generous limits
 
-async function analyze(resumeText, jobDescription) {
+async function analyze(resumeText, jobDescription, strategy = {}) {
   const jobTitle = jobDescription.split('\n')[0].substring(0, 60);
 
   if (process.env.DRY_RUN === 'true') {

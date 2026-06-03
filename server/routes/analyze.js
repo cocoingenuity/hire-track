@@ -4,6 +4,7 @@ const { getDb } = require('../db');
 const { analyze } = require('../analyzer');
 const { getResumeText } = require('../resumes');
 const { resume, isPaused, isStopped } = require('../pause');
+const { getStrategy } = require('../strategy');
 
 router.post('/:track', (req, res) => {
   const db = getDb();
@@ -46,6 +47,9 @@ async function runAnalysisJob(db, trackId, runId) {
     return;
   }
 
+  const strategy = getStrategy(db);
+  console.log(`[analyze/${trackId}] strategy: visa=${strategy.visa_status} langs=${strategy.languages.join(',')} vehicle=${strategy.has_vehicle} clearance=${strategy.security_clearance}`);
+
   const unanalyzed = db
     .prepare('SELECT * FROM jobs WHERE track = ? AND analyzed_at IS NULL ORDER BY scraped_at DESC')
     .all(trackId);
@@ -72,7 +76,7 @@ async function runAnalysisJob(db, trackId, runId) {
 
     console.log(`[analyzer] → "${job.title.substring(0, 50)}" (id=${job.id})`);
     try {
-      const result = await analyze(resumeText, jobContext);
+      const result = await analyze(resumeText, jobContext, strategy);
       console.log(`[analyzer] ✓ score=${result.match_score} tier="${result.match_tier}"`);
       db.prepare(`
         UPDATE jobs SET

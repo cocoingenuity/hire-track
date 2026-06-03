@@ -4,7 +4,57 @@ const DEEPSEEK_API_URL = 'https://api.deepseek.com/chat/completions';
 const MODEL = process.env.DEEPSEEK_MODEL || 'deepseek-v4-flash';
 const RATE_LIMIT_DELAY_MS = 200;
 
-async function analyze(resumeText, jobDescription) {
+function buildStrategySection(strategy) {
+  const s = strategy || {};
+  const visaStatus    = s.visa_status          || 'PGWP';
+  const languages     = Array.isArray(s.languages) ? s.languages : ['English'];
+  const hasVehicle    = !!s.has_vehicle;
+  const hasClearance  = !!s.security_clearance;
+  const targetRoles   = s.target_roles         || '';
+  const expLevel      = s.experience_level     || 'Entry-level';
+  const blacklisted   = s.blacklisted_keywords || '';
+
+  const blockers = [];
+  const needsPR = visaStatus !== 'PR' && visaStatus !== 'Citizen';
+  if (needsPR) {
+    blockers.push(
+      `1. Job requires Canadian Permanent Residency or Citizenship (candidate is on ${visaStatus} and does not qualify)`
+    );
+  }
+  if (!hasClearance) {
+    blockers.push(
+      `${blockers.length + 1}. Job requires Canadian security clearance that the candidate does not hold`
+    );
+  }
+  if (!languages.includes('French')) {
+    blockers.push(
+      `${blockers.length + 1}. Job requires French language proficiency (candidate does not speak French)`
+    );
+  }
+  if (!hasVehicle) {
+    blockers.push(
+      `${blockers.length + 1}. Job requires a G driver's license or personal vehicle (candidate does not have one)`
+    );
+  }
+
+  const candidateContext = [
+    `- Immigration status: ${visaStatus}`,
+    `- Languages: ${languages.join(', ')}`,
+    `- Has vehicle / G license: ${hasVehicle ? 'Yes' : 'No'}`,
+    `- Security clearance eligible: ${hasClearance ? 'Yes' : 'No'}`,
+    targetRoles   && `- Target roles: ${targetRoles}`,
+    expLevel      && `- Experience level: ${expLevel}`,
+    blacklisted   && `- Deprioritize roles containing: ${blacklisted}`,
+  ].filter(Boolean).join('\n');
+
+  const blacklistInstruction = blacklisted
+    ? `\nDEPRIORITIZE: If the job title or description contains any of these keywords, score ≤ 35 and set apply_recommendation to false unless the role is otherwise an exceptional match: ${blacklisted}.`
+    : '';
+
+  return { candidateContext, blockers, blacklistInstruction };
+}
+
+async function analyze(resumeText, jobDescription, strategy = {}) {
   const jobTitle = jobDescription.split('\n')[0].substring(0, 60);
 
   if (process.env.DRY_RUN === 'true') {
@@ -28,7 +78,16 @@ async function analyze(resumeText, jobDescription) {
   const keyPreview = (process.env.DEEPSEEK_API_KEY || '(not set)').substring(0, 10);
   console.log(`[deepseek] analyze() → "${jobTitle}" | key: ${keyPreview}...`);
 
+  const { candidateContext, blockers, blacklistInstruction } = buildStrategySection(strategy);
+
+  const blockersSection = blockers.length > 0
+    ? `HARD BLOCKERS — if any of the following apply, the match_score MUST be 35 or below, match_tier MUST be "Skip", and apply_recommendation MUST be false. List the blocker as the first item in gaps:\n${blockers.join('\n')}`
+    : '';
+
   const prompt = `You are a job application assistant evaluating candidate fit.
+
+CANDIDATE CONTEXT:
+${candidateContext}
 
 RESUME:
 ${resumeText}
@@ -53,12 +112,7 @@ Analyze how well this candidate matches this job. Return ONLY valid JSON with th
 Each item in strengths, gaps, and key_requirements must be a single string formatted as "English description / 简体中文翻译" — the slash separates the two languages.
 noc_code must use the Canadian NOC 2021 classification (5-digit codes). Example: "22220 – Computer Network Technicians".
 teer_level is the TEER level from NOC 2021 (0–5). It equals the second digit of the 5-digit NOC code — e.g. NOC 22220 → TEER 2.
-
-HARD BLOCKERS — if any of the following apply, the match_score MUST be 35 or below, match_tier MUST be "Skip", and apply_recommendation MUST be false. List the blocker as the first item in gaps:
-1. The job requires Canadian Permanent Residency or Citizenship (candidate is on a Post-Graduation Work Permit and does not qualify)
-2. The job requires 5+ years of Canadian security clearance (candidate has only been in Canada ~2.5 years and cannot meet this)
-3. The job requires French language skills (candidate does not speak French)
-4. The job requires a G driver's license (candidate does not have one)
+${blockersSection ? '\n' + blockersSection : ''}${blacklistInstruction}
 
 Scoring rubric — you MUST use the full 0–100 range and produce differentiated scores:
 - 90–100 Strong Match: Candidate meets virtually every requirement; directly relevant experience; minimal ramp-up needed
