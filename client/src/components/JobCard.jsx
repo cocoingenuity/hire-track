@@ -32,34 +32,35 @@ export default function JobCard({ job, isSelected, onSelect, onStatusChange, isC
       onClick={() => onSelect(job)}
       className={`ht-job-card${isSelected ? ' selected' : ''}`}
     >
-      {/* Checkbox — small and subtle; revealed by CSS on card hover or when checked */}
-      <span
-        className={`job-checkbox flex items-center justify-center flex-shrink-0 rounded cursor-pointer transition-colors${isChecked ? ' is-checked' : ''}`}
-        style={{
-          width: 14, height: 14,
-          background: isChecked ? 'var(--ht-green)' : 'var(--ht-bg-3)',
-          border: `1px solid ${isChecked ? 'var(--ht-green)' : 'var(--ht-border-2)'}`,
-        }}
-        onClick={handleCheck}
-      >
-        {isChecked && <i className="ti ti-check" style={{ fontSize: 9, color: '#fff' }} />}
-      </span>
+      {/* Left: checkbox + title/meta grouped so the hidden checkbox doesn't create a gap */}
+      <div className="flex items-center gap-3" style={{ flex: 1, minWidth: 0 }}>
+        <span
+          className={`job-checkbox flex items-center justify-center flex-shrink-0 rounded cursor-pointer transition-colors${isChecked ? ' is-checked' : ''}`}
+          style={{
+            width: 14, height: 14,
+            background: isChecked ? 'var(--ht-green)' : 'var(--ht-bg-3)',
+            border: `1px solid ${isChecked ? 'var(--ht-green)' : 'var(--ht-border-2)'}`,
+          }}
+          onClick={handleCheck}
+        >
+          {isChecked && <i className="ti ti-check" style={{ fontSize: 9, color: '#fff' }} />}
+        </span>
 
-      {/* Title + meta */}
-      <div className="ht-job-card-left">
-        <div className="ht-job-title">{job.title}</div>
-        <div className="ht-job-meta">
-          <span>{job.company}</span>
-          {job.location && (
-            <><span className="ht-meta-dot" /><span>{job.location}</span></>
-          )}
-          {dateLabel && (
-            <><span className="ht-meta-dot" /><span>{dateLabel}</span></>
-          )}
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div className="ht-job-title">{job.title}</div>
+          <div className="ht-job-meta">
+            <span>{job.company}</span>
+            {job.location && (
+              <><span className="ht-meta-dot" /><span>{job.location}</span></>
+            )}
+            {dateLabel && (
+              <><span className="ht-meta-dot" /><span>{dateLabel}</span></>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Score pill + bookmark */}
+      {/* Right: score pill + bookmark */}
       <div className="ht-job-card-right">
         {isAnalyzing ? (
           <div className="ht-score-pill ht-score-pill-skip" style={{ opacity: 0.6 }} title="Analyzing…">

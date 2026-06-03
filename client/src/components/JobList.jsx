@@ -40,7 +40,7 @@ export default function JobList({
       <div className="ht-job-list">
         <div className="flex justify-between items-center w-full mb-6 pb-2 border-b border-gray-100">
           <div className="flex items-center gap-3">
-            <span className="ht-list-title">Matching positions</span>
+            <span className="ht-list-title">Select All</span>
           </div>
           <div className="flex items-center gap-4">
             <div className="ht-sort-toggle" style={{ padding: '3px' }}>
@@ -79,7 +79,7 @@ export default function JobList({
             {allSelected  && <i className="ti ti-check" style={{ fontSize: 11, color: '#fff' }} />}
             {someSelected && <i className="ti ti-minus" style={{ fontSize: 11, color: 'var(--ht-green)' }} />}
           </span>
-          <span className="ht-list-title">Matching positions</span>
+          <span className="ht-list-title">Select All</span>
         </div>
 
         {/* Right: Sort toggle + count */}
