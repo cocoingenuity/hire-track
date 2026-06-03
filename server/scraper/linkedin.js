@@ -98,7 +98,7 @@ function shouldFilter(title, description, trackId) {
 // f_TPR=r259200 → past 3 days (259200 seconds)
 const TIME_FILTER = 'r259200';
 
-async function scrape(track) {
+async function scrape(track, onJob) {
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({
     userAgent:
@@ -109,7 +109,6 @@ async function scrape(track) {
     },
   });
   const page = await context.newPage();
-  const allJobs = [];
   const seen = new Set();
 
   try {
@@ -195,7 +194,7 @@ async function scrape(track) {
 
             console.log(`[linkedin] "${title.substring(0, 45)}" → ${date_posted}`);
 
-            allJobs.push({
+            await onJob({
               title,
               company,
               location,
@@ -215,8 +214,6 @@ async function scrape(track) {
   } finally {
     await browser.close();
   }
-
-  return allJobs;
 }
 
 module.exports = { scrape };

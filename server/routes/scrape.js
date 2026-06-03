@@ -32,27 +32,28 @@ router.post('/:track', (req, res) => {
 async function runScrapeJob(db, trackId, runId) {
   resume(trackId);
 
+  let jobsFound = 0;
+  let jobsNew   = 0;
+
+  // Prepare statements once; reused for every job the scraper emits.
+  const insertJob = db.prepare(`
+    INSERT INTO jobs (track, title, company, location, date_posted, description, apply_url, source, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL)
+  `);
   const updateRun = db.prepare(
     'UPDATE scrape_runs SET jobs_found = ?, jobs_new = ?, jobs_analyzed = ? WHERE id = ?'
   );
 
-  let jobsFound = 0;
-  let jobsNew = 0;
-
-  const rawJobs = await scrape(trackId);
-  db.prepare('UPDATE scrape_runs SET jobs_found = ? WHERE id = ?').run(rawJobs.length, runId);
-
-  for (const job of rawJobs) {
+  // Called by the scraper for each valid job card as it is parsed — not after all pages finish.
+  // This makes jobs_found / jobs_new update in real time so the polling UI sees live progress.
+  async function onJob(job) {
     jobsFound++;
     try {
-      db.prepare(`
-        INSERT INTO jobs (track, title, company, location, date_posted, description, apply_url, source, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL)
-      `).run(
+      insertJob.run(
         trackId, job.title, job.company,
-        job.location || null, job.date_posted || null,
+        job.location    || null, job.date_posted || null,
         job.description || null, job.apply_url,
-        job.source || 'indeed'
+        job.source      || 'linkedin'
       );
       jobsNew++;
     } catch (err) {
@@ -60,6 +61,8 @@ async function runScrapeJob(db, trackId, runId) {
     }
     updateRun.run(jobsFound, jobsNew, 0, runId);
   }
+
+  await scrape(trackId, onJob);
 
   console.log(`[scrape/${trackId}] done — ${jobsFound} found, ${jobsNew} new (select jobs to analyze)`);
   db.prepare(
