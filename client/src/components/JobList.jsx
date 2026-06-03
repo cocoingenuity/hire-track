@@ -16,9 +16,24 @@ function getPageNumbers(current, total) {
   return result;
 }
 
-export default function JobList({ jobs, selectedJob, onSelect, onStatusChange, sort, onSortChange }) {
+export default function JobList({
+  jobs, selectedJob, onSelect, onStatusChange, sort, onSortChange,
+  selectedJobIds, analyzingJobIds, onToggleSelect, onSelectAll, onClearSelection,
+}) {
   const [page, setPage] = useState(1);
   useEffect(() => { setPage(1); }, [jobs]);
+
+  const allSelected  = jobs.length > 0 && jobs.every(j => selectedJobIds.has(j.id));
+  const someSelected = !allSelected && jobs.some(j => selectedJobIds.has(j.id));
+
+  function handleSelectAll(e) {
+    e.stopPropagation();
+    if (allSelected) {
+      onClearSelection();
+    } else {
+      onSelectAll(jobs.map(j => j.id));
+    }
+  }
 
   if (jobs.length === 0) {
     return (
@@ -46,7 +61,21 @@ export default function JobList({ jobs, selectedJob, onSelect, onStatusChange, s
   return (
     <div className="ht-job-list">
       <div className="ht-list-header">
-        <span className="ht-list-title">Matching positions</span>
+        {/* Select All checkbox */}
+        <span
+          className="flex items-center justify-center w-4 h-4 rounded flex-shrink-0 transition-colors cursor-pointer"
+          style={{
+            background: allSelected ? 'var(--ht-green)' : 'var(--ht-bg-3)',
+            border: `0.5px solid ${allSelected || someSelected ? 'var(--ht-green)' : 'var(--ht-border-2)'}`,
+          }}
+          onClick={handleSelectAll}
+          title={allSelected ? 'Deselect all' : 'Select all'}
+        >
+          {allSelected  && <i className="ti ti-check" style={{ fontSize: 10, color: '#fff' }} />}
+          {someSelected && <i className="ti ti-minus" style={{ fontSize: 10, color: 'var(--ht-green)' }} />}
+        </span>
+
+        <span className="ht-list-title" style={{ flex: 1 }}>Matching positions</span>
         <div className="ht-sort-toggle">
           <button onClick={() => onSortChange('score')} className={`ht-sort-btn${sort === 'score' ? ' active' : ''}`}>Best match</button>
           <button onClick={() => onSortChange('date')}  className={`ht-sort-btn${sort === 'date'  ? ' active' : ''}`}>Newest first</button>
@@ -61,6 +90,9 @@ export default function JobList({ jobs, selectedJob, onSelect, onStatusChange, s
           isSelected={selectedJob?.id === job.id}
           onSelect={onSelect}
           onStatusChange={onStatusChange}
+          isChecked={selectedJobIds.has(job.id)}
+          isAnalyzing={analyzingJobIds.has(job.id)}
+          onToggleCheck={onToggleSelect}
         />
       ))}
 

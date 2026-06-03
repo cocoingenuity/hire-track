@@ -23,6 +23,8 @@ export default function App() {
   const [pauseState, setPauseState] = useState(null); // null | 'paused'
   const [jobs, setJobs]               = useState([]);
   const [selectedJob, setSelectedJob] = useState(null);
+  const [selectedJobIds, setSelectedJobIds] = useState(new Set());
+  const [analyzingJobIds, setAnalyzingJobIds] = useState(new Set());
   const [filters, setFilters]         = useState({ tier: '', status: '', days: '' });
   const [sort, setSort]               = useState('score'); // 'score' | 'date'
 
@@ -117,8 +119,26 @@ export default function App() {
   function switchTrack(id) {
     setActiveTrack(id);
     setSelectedJob(null);
+    setSelectedJobIds(new Set());
+    setAnalyzingJobIds(new Set());
     setFilters({ tier: '', status: '', days: '' });
     setSort('score');
+  }
+
+  function toggleSelectJob(jobId) {
+    setSelectedJobIds(prev => {
+      const next = new Set(prev);
+      next.has(jobId) ? next.delete(jobId) : next.add(jobId);
+      return next;
+    });
+  }
+
+  function selectAllJobs(jobIds) {
+    setSelectedJobIds(new Set(jobIds));
+  }
+
+  function clearSelection() {
+    setSelectedJobIds(new Set());
   }
 
   function setFilter(key, value) {
@@ -133,12 +153,16 @@ export default function App() {
       .catch(() => setIsRefreshing(false));
   }
 
-  function handleAnalyze() {
-    if (!activeTrack || isRefreshing) return;
+  function handleAnalyzeSelected() {
+    if (!activeTrack || isRefreshing || selectedJobIds.size === 0) return;
     setRefreshMode('analyze');
     setIsRefreshing(true);
-    fetch(`/api/analyze/${activeTrack}`, { method: 'POST' })
-      .catch(() => setIsRefreshing(false));
+    setAnalyzingJobIds(new Set(selectedJobIds));
+    fetch('/api/analyze/batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jobIds: [...selectedJobIds], trackId: activeTrack }),
+    }).catch(() => { setIsRefreshing(false); setAnalyzingJobIds(new Set()); });
   }
 
   function handlePause() {
@@ -156,12 +180,15 @@ export default function App() {
   function handleStop() {
     setIsRefreshing(false);
     setPauseState(null);
+    setAnalyzingJobIds(new Set());
     fetch(`/api/stop/${activeTrack}`, { method: 'POST' });
   }
 
   function handleScrapeComplete() {
     setIsRefreshing(false);
     setPauseState(null);
+    setAnalyzingJobIds(new Set());
+    setSelectedJobIds(new Set());
     loadJobs(activeTrack);
   }
 
@@ -231,9 +258,16 @@ export default function App() {
                 <i className="ti ti-refresh" />
                 {isRefreshing && refreshMode === 'scrape' ? 'Scraping…' : 'Refresh'}
               </button>
-              <button onClick={handleAnalyze} disabled={isRefreshing} className="ht-btn ht-btn-dark">
+              <button
+                onClick={handleAnalyzeSelected}
+                disabled={isRefreshing || selectedJobIds.size === 0}
+                className="ht-btn ht-btn-dark"
+                title={selectedJobIds.size === 0 ? 'Select jobs to analyze' : ''}
+              >
                 <i className="ti ti-bolt" />
-                {isRefreshing && refreshMode === 'analyze' ? 'Analyzing…' : 'Analyze'}
+                {isRefreshing && refreshMode === 'analyze'
+                  ? 'Analyzing…'
+                  : `Analyze Selected (${selectedJobIds.size})`}
               </button>
             </>
           )}
@@ -330,6 +364,11 @@ export default function App() {
                 onStatusChange={handleStatusChange}
                 sort={sort}
                 onSortChange={setSort}
+                selectedJobIds={selectedJobIds}
+                analyzingJobIds={analyzingJobIds}
+                onToggleSelect={toggleSelectJob}
+                onSelectAll={selectAllJobs}
+                onClearSelection={clearSelection}
               />
               {selectedJob && (
                 <JobDetail

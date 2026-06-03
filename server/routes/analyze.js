@@ -6,6 +6,36 @@ const { getResumeText } = require('../resumes');
 const { resume, isPaused, isStopped } = require('../pause');
 const { getStrategy } = require('../strategy');
 
+// POST /api/analyze/batch  { jobIds: [1,2,3], trackId: "it-support" }
+router.post('/batch', (req, res) => {
+  const { jobIds, trackId } = req.body;
+  if (!Array.isArray(jobIds) || jobIds.length === 0 || !trackId) {
+    return res.status(400).json({ error: 'jobIds (array) and trackId required' });
+  }
+
+  const db = getDb();
+
+  const existing = db
+    .prepare("SELECT id FROM scrape_runs WHERE track = ? AND status = 'running'")
+    .get(trackId);
+
+  if (existing) {
+    return res.json({ run_id: existing.id });
+  }
+
+  const { lastInsertRowid: runId } = db
+    .prepare("INSERT INTO scrape_runs (track, status, jobs_found) VALUES (?, 'running', ?)")
+    .run(trackId, jobIds.length);
+
+  runBatchAnalysis(db, trackId, runId, jobIds).catch(err => {
+    db.prepare(
+      "UPDATE scrape_runs SET status = 'error', error_msg = ?, finished_at = datetime('now') WHERE id = ?"
+    ).run(err.message, runId);
+  });
+
+  res.json({ run_id: runId });
+});
+
 router.post('/:track', (req, res) => {
   const db = getDb();
   const { track } = req.params;
@@ -114,6 +144,88 @@ async function runAnalysisJob(db, trackId, runId) {
       db.prepare('UPDATE scrape_runs SET status = ? WHERE id = ?').run(stopped ? 'done' : 'paused', runId);
       return;
     }
+  }
+
+  db.prepare(
+    "UPDATE scrape_runs SET status = 'done', finished_at = datetime('now') WHERE id = ?"
+  ).run(runId);
+}
+
+async function runBatchAnalysis(db, trackId, runId, jobIds) {
+  resume(trackId);
+
+  const updateRun = db.prepare(
+    'UPDATE scrape_runs SET jobs_found = ?, jobs_new = ?, jobs_analyzed = ? WHERE id = ?'
+  );
+
+  const resumeText = getResumeText(trackId);
+  if (!resumeText) {
+    console.log(`[batch/${trackId}] No resume — skipping`);
+    db.prepare(
+      "UPDATE scrape_runs SET status = 'done', finished_at = datetime('now') WHERE id = ?"
+    ).run(runId);
+    return;
+  }
+
+  const strategy = getStrategy(db);
+  const jobs = db
+    .prepare(`SELECT * FROM jobs WHERE id IN (${jobIds.map(() => '?').join(',')})`)
+    .all(...jobIds);
+
+  console.log(`[batch/${trackId}] analyzing ${jobs.length} selected jobs`);
+
+  let jobsAnalyzed = 0;
+  updateRun.run(jobs.length, 0, jobsAnalyzed, runId);
+
+  for (const job of jobs) {
+    if (isStopped(trackId)) {
+      console.log(`[batch/${trackId}] stopped`);
+      db.prepare(
+        "UPDATE scrape_runs SET status = 'done', finished_at = datetime('now') WHERE id = ?"
+      ).run(runId);
+      return;
+    }
+
+    const jobContext = [
+      job.title,
+      job.company && `Company: ${job.company}`,
+      job.location && `Location: ${job.location}`,
+      job.description,
+    ].filter(Boolean).join('\n');
+
+    console.log(`[batch] → "${job.title.substring(0, 50)}" (id=${job.id})`);
+    try {
+      const result = await analyze(resumeText, jobContext, strategy);
+      console.log(`[batch] ✓ score=${result.match_score} tier="${result.match_tier}"`);
+      db.prepare(`
+        UPDATE jobs SET
+          match_score = ?, match_tier = ?,
+          strengths = ?, gaps = ?, key_requirements = ?,
+          apply_recommendation = ?, one_line_pitch = ?,
+          noc_code = ?, noc_explanation = ?, teer_level = ?,
+          analyzed_at = datetime('now')
+        WHERE id = ?
+      `).run(
+        result.match_score, result.match_tier,
+        JSON.stringify(result.strengths),
+        JSON.stringify(result.gaps),
+        JSON.stringify(result.key_requirements),
+        result.apply_recommendation ? 1 : 0,
+        result.one_line_pitch,
+        result.noc_code || null,
+        result.noc_explanation || null,
+        result.teer_level ?? null,
+        job.id
+      );
+      jobsAnalyzed++;
+    } catch (err) {
+      console.error(`[batch] ✗ "${job.title.substring(0, 50)}": ${err.message.substring(0, 120)}`);
+      if (err.dailyQuotaExceeded) {
+        console.error('[batch] Daily quota exhausted — aborting');
+        break;
+      }
+    }
+    updateRun.run(jobs.length, 0, jobsAnalyzed, runId);
   }
 
   db.prepare(
