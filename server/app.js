@@ -21,10 +21,11 @@ if (process.env.NODE_ENV !== 'test') {
   loadResumes().catch(err => console.error('[resumes] Load error:', err.message));
 }
 
-app.use('/api/tracks', require('./routes/tracks'));
-app.use('/api/jobs', require('./routes/jobs'));
-app.use('/api/scrape', require('./routes/scrape'));
-app.use('/api/analyze', require('./routes/analyze'));
+app.use('/api/tracks',   require('./routes/tracks'));
+app.use('/api/jobs',     require('./routes/jobs'));
+app.use('/api/scrape',   require('./routes/scrape'));
+app.use('/api/analyze',  require('./routes/analyze'));
+app.use('/api/strategy', require('./routes/strategy'));
 
 app.post('/api/pause/:track', (req, res) => {
   const { track } = req.params;

@@ -46,6 +46,17 @@ function getDb() {
       scraped_at        TEXT DEFAULT CURRENT_TIMESTAMP
     );
 
+    CREATE TABLE IF NOT EXISTS user_strategy (
+      id                   INTEGER PRIMARY KEY DEFAULT 1,
+      visa_status          TEXT    DEFAULT 'PGWP',
+      languages            TEXT    DEFAULT '["English"]',
+      has_vehicle          INTEGER DEFAULT 0,
+      security_clearance   INTEGER DEFAULT 0,
+      target_roles         TEXT    DEFAULT '',
+      experience_level     TEXT    DEFAULT 'Entry-level',
+      blacklisted_keywords TEXT    DEFAULT ''
+    );
+
     CREATE TABLE IF NOT EXISTS scrape_runs (
       id             INTEGER PRIMARY KEY AUTOINCREMENT,
       track          TEXT NOT NULL,

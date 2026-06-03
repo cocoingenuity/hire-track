@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const DEFAULTS = {
   visaStatus: 'PGWP',
@@ -46,9 +46,31 @@ const inputStyle = {
   fontFamily: 'var(--ht-font-sans)',
 };
 
+// Map backend snake_case keys to frontend camelCase form state
+function apiToForm(data) {
+  return {
+    visaStatus:               data.visa_status          ?? DEFAULTS.visaStatus,
+    languages:                data.languages             ?? DEFAULTS.languages,
+    hasDriversLicense:        data.has_vehicle           ?? DEFAULTS.hasDriversLicense,
+    securityClearanceEligible:data.security_clearance    ?? DEFAULTS.securityClearanceEligible,
+    targetRoles:              data.target_roles          ?? DEFAULTS.targetRoles,
+    experienceLevel:          data.experience_level      ?? DEFAULTS.experienceLevel,
+    blacklistedKeywords:      data.blacklisted_keywords  ?? DEFAULTS.blacklistedKeywords,
+  };
+}
+
 export default function StrategySettings({ onClose }) {
   const [form, setForm] = useState(DEFAULTS);
   const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    fetch('/api/strategy')
+      .then(r => r.json())
+      .then(data => { setForm(apiToForm(data)); setLoading(false); })
+      .catch(() => { setLoading(false); });
+  }, []);
 
   function set(key, value) {
     setForm(f => ({ ...f, [key]: value }));
@@ -67,8 +89,23 @@ export default function StrategySettings({ onClose }) {
 
   function handleSave(e) {
     e.preventDefault();
-    console.log(JSON.stringify(form, null, 2));
-    setSaved(true);
+    setError('');
+    fetch('/api/strategy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        visa_status:          form.visaStatus,
+        languages:            form.languages,
+        has_vehicle:          form.hasDriversLicense,
+        security_clearance:   form.securityClearanceEligible,
+        target_roles:         form.targetRoles,
+        experience_level:     form.experienceLevel,
+        blacklisted_keywords: form.blacklistedKeywords,
+      }),
+    })
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then(() => setSaved(true))
+      .catch(() => setError('Failed to save. Check server connection.'));
   }
 
   return (
@@ -216,7 +253,13 @@ export default function StrategySettings({ onClose }) {
             {saved && (
               <span className="text-sm flex items-center gap-1.5" style={{ color: 'var(--ht-green)' }}>
                 <i className="ti ti-circle-check" />
-                Saved to console
+                Saved
+              </span>
+            )}
+            {error && (
+              <span className="text-sm flex items-center gap-1.5" style={{ color: '#e05' }}>
+                <i className="ti ti-alert-circle" />
+                {error}
               </span>
             )}
           </div>
