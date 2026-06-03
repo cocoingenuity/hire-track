@@ -38,13 +38,17 @@ export default function JobList({
   if (jobs.length === 0) {
     return (
       <div className="ht-job-list">
-        <div className="ht-list-header">
-          <span className="ht-list-title">Matching positions</span>
-          <div className="ht-sort-toggle">
-            <button onClick={() => onSortChange('score')} className={`ht-sort-btn${sort === 'score' ? ' active' : ''}`}>Best match</button>
-            <button onClick={() => onSortChange('date')}  className={`ht-sort-btn${sort === 'date'  ? ' active' : ''}`}>Newest first</button>
+        <div className="flex justify-between items-center w-full mb-6 pb-2 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <span className="ht-list-title">Matching positions</span>
           </div>
-          <span className="ht-list-count">0 jobs</span>
+          <div className="flex items-center gap-4">
+            <div className="ht-sort-toggle" style={{ padding: '3px' }}>
+              <button onClick={() => onSortChange('score')} className={`ht-sort-btn${sort === 'score' ? ' active' : ''}`}>Best match</button>
+              <button onClick={() => onSortChange('date')}  className={`ht-sort-btn${sort === 'date'  ? ' active' : ''}`}>Newest first</button>
+            </div>
+            <span className="ht-list-count">0 jobs</span>
+          </div>
         </div>
         <div className="ht-empty">
           <div className="ht-empty-icon">📭</div>
@@ -60,27 +64,32 @@ export default function JobList({
 
   return (
     <div className="ht-job-list">
-      <div className="ht-list-header">
-        {/* Select All checkbox */}
-        <span
-          className="flex items-center justify-center w-4 h-4 rounded flex-shrink-0 transition-colors cursor-pointer"
-          style={{
-            background: allSelected ? 'var(--ht-green)' : 'var(--ht-bg-3)',
-            border: `0.5px solid ${allSelected || someSelected ? 'var(--ht-green)' : 'var(--ht-border-2)'}`,
-          }}
-          onClick={handleSelectAll}
-          title={allSelected ? 'Deselect all' : 'Select all'}
-        >
-          {allSelected  && <i className="ti ti-check" style={{ fontSize: 10, color: '#fff' }} />}
-          {someSelected && <i className="ti ti-minus" style={{ fontSize: 10, color: 'var(--ht-green)' }} />}
-        </span>
-
-        <span className="ht-list-title" style={{ flex: 1 }}>Matching positions</span>
-        <div className="ht-sort-toggle">
-          <button onClick={() => onSortChange('score')} className={`ht-sort-btn${sort === 'score' ? ' active' : ''}`}>Best match</button>
-          <button onClick={() => onSortChange('date')}  className={`ht-sort-btn${sort === 'date'  ? ' active' : ''}`}>Newest first</button>
+      <div className="flex justify-between items-center w-full mb-6 pb-2 border-b border-gray-100">
+        {/* Left: Select All + Title */}
+        <div className="flex items-center gap-3">
+          <span
+            className="flex items-center justify-center w-5 h-5 rounded flex-shrink-0 transition-colors cursor-pointer"
+            style={{
+              background: allSelected ? 'var(--ht-green)' : 'var(--ht-bg-3)',
+              border: `1px solid ${allSelected || someSelected ? 'var(--ht-green)' : 'var(--ht-border-2)'}`,
+            }}
+            onClick={handleSelectAll}
+            title={allSelected ? 'Deselect all' : 'Select all'}
+          >
+            {allSelected  && <i className="ti ti-check" style={{ fontSize: 11, color: '#fff' }} />}
+            {someSelected && <i className="ti ti-minus" style={{ fontSize: 11, color: 'var(--ht-green)' }} />}
+          </span>
+          <span className="ht-list-title">Matching positions</span>
         </div>
-        <span className="ht-list-count">{jobs.length} jobs</span>
+
+        {/* Right: Sort toggle + count */}
+        <div className="flex items-center gap-4">
+          <div className="ht-sort-toggle" style={{ padding: '3px' }}>
+            <button onClick={() => onSortChange('score')} className={`ht-sort-btn${sort === 'score' ? ' active' : ''}`}>Best match</button>
+            <button onClick={() => onSortChange('date')}  className={`ht-sort-btn${sort === 'date'  ? ' active' : ''}`}>Newest first</button>
+          </div>
+          <span className="ht-list-count">{jobs.length} jobs</span>
+        </div>
       </div>
 
       {pageJobs.map(job => (
