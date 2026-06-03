@@ -25,7 +25,7 @@ export default function App() {
   const [selectedJob, setSelectedJob] = useState(null);
   const [selectedJobIds, setSelectedJobIds] = useState(new Set());
   const [analyzingJobIds, setAnalyzingJobIds] = useState(new Set());
-  const [filters, setFilters]         = useState({ tier: '', status: '', days: '' });
+  const [filters, setFilters]         = useState({ tier: '', status: '', days: '', analysis: '' });
   const [sort, setSort]               = useState('score'); // 'score' | 'date'
 
   useEffect(() => {
@@ -68,6 +68,8 @@ export default function App() {
       if (job.status === 'Applied' && filters.status !== 'Applied') return false;
       if (filters.tier   && job.match_tier !== filters.tier)   return false;
       if (filters.status && job.status     !== filters.status) return false;
+      if (filters.analysis === 'analyzed'   && job.match_score == null)  return false;
+      if (filters.analysis === 'unanalyzed' && job.match_score != null)  return false;
       if (filters.days) {
         const cutoff = Date.now() - Number(filters.days) * DAY_MS;
         if (jobDate(job) < cutoff) return false;
@@ -101,6 +103,8 @@ export default function App() {
   const cutoff7  = Date.now() - 7  * DAY_MS;
   const cutoff30 = Date.now() - 30 * DAY_MS;
   const sidebarCounts = {
+    analyzed:   jobs.filter(j => j.match_score != null).length,
+    unanalyzed: jobs.filter(j => j.match_score == null).length,
     strong:    jobs.filter(j => j.match_tier === 'Strong Match').length,
     good:      jobs.filter(j => j.match_tier === 'Good Match').length,
     stretch:   jobs.filter(j => j.match_tier === 'Stretch').length,
@@ -121,7 +125,7 @@ export default function App() {
     setSelectedJob(null);
     setSelectedJobIds(new Set());
     setAnalyzingJobIds(new Set());
-    setFilters({ tier: '', status: '', days: '' });
+    setFilters({ tier: '', status: '', days: '', analysis: '' });
     setSort('score');
   }
 
@@ -204,6 +208,12 @@ export default function App() {
         setSelectedJob(prev => prev?.id === updated.id ? { ...prev, status: updated.status } : prev);
       });
   }
+
+  const ANALYSIS_FILTERS = [
+    { v: '',           label: 'All',        icon: 'ti-cpu',         count: jobs.length },
+    { v: 'analyzed',   label: 'Analyzed',   icon: 'ti-circle-check', count: sidebarCounts.analyzed },
+    { v: 'unanalyzed', label: 'Unanalyzed', icon: 'ti-clock',       count: sidebarCounts.unanalyzed },
+  ];
 
   const TIER_FILTERS = [
     { v: '',             label: 'All tiers',    icon: 'ti-stack',        count: jobs.length },
@@ -303,6 +313,23 @@ export default function App() {
           <>
             {/* Sidebar */}
             <aside className="ht-sidebar">
+              <div className="ht-filter-group">
+                <div className="ht-filter-label">AI Analysis</div>
+                {ANALYSIS_FILTERS.map(item => (
+                  <button
+                    key={item.v}
+                    onClick={() => setFilter('analysis', item.v)}
+                    className={`ht-filter-item${filters.analysis === item.v ? ' active' : ''}`}
+                  >
+                    <i className={`ti ${item.icon}`} />
+                    <span>{item.label}</span>
+                    <span className="ht-filter-count">{item.count}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="ht-sidebar-divider" />
+
               <div className="ht-filter-group">
                 <div className="ht-filter-label">Match level</div>
                 {TIER_FILTERS.map(item => (

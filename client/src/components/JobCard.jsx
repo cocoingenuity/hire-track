@@ -66,9 +66,17 @@ export default function JobCard({ job, isSelected, onSelect, onStatusChange, isC
           <div className="ht-score-pill ht-score-pill-skip" style={{ opacity: 0.6 }} title="Analyzing…">
             <i className="ti ti-loader-2" style={{ fontSize: 12, animation: 'spin 1s linear infinite' }} />
           </div>
+        ) : job.match_score == null ? (
+          <span style={{
+            fontSize: 11, color: 'var(--ht-text-3)',
+            background: 'var(--ht-bg-3)', border: '0.5px solid var(--ht-border)',
+            borderRadius: 20, padding: '2px 9px',
+          }}>
+            New
+          </span>
         ) : (
-          <div className={`ht-score-pill ${job.match_tier ? pill.cls : 'ht-score-pill-skip'}`}>
-            {job.match_score ?? '—'}
+          <div className={`ht-score-pill ${pill.cls}`}>
+            {job.match_score}
           </div>
         )}
         <button

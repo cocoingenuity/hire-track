@@ -87,7 +87,19 @@ export default function JobDetail({ job, onClose, onStatusChange }) {
 
         {/* Body */}
         <div className="ht-detail-body">
-          {job.one_line_pitch && (
+          {job.match_score == null && (
+            <div style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              textAlign: 'center', padding: '48px 24px', gap: 10,
+            }}>
+              <i className="ti ti-cpu" style={{ fontSize: 28, color: 'var(--ht-border-2)' }} />
+              <p style={{ fontSize: 13, color: 'var(--ht-text-3)', lineHeight: 1.6, maxWidth: 240, margin: 0 }}>
+                AI Analysis Pending.<br />
+                Select this job from the list and run analysis to unlock insights.
+              </p>
+            </div>
+          )}
+          {job.match_score != null && job.one_line_pitch && (
             <div>
               <div className="ht-section-head green">
                 <i className="ti ti-quote" /> Pitch
@@ -98,7 +110,7 @@ export default function JobDetail({ job, onClose, onStatusChange }) {
             </div>
           )}
 
-          {job.strengths?.length > 0 && (
+          {job.match_score != null && job.strengths?.length > 0 && (
             <div>
               <div className="ht-section-head green">
                 <i className="ti ti-circle-check" /> Strengths
@@ -111,7 +123,7 @@ export default function JobDetail({ job, onClose, onStatusChange }) {
             </div>
           )}
 
-          {job.gaps?.length > 0 && (
+          {job.match_score != null && job.gaps?.length > 0 && (
             <div>
               <div className="ht-section-head red">
                 <i className="ti ti-alert-circle" /> Gaps
@@ -124,7 +136,7 @@ export default function JobDetail({ job, onClose, onStatusChange }) {
             </div>
           )}
 
-          {job.key_requirements?.length > 0 && (
+          {job.match_score != null && job.key_requirements?.length > 0 && (
             <div>
               <div className="ht-section-head blue">
                 <i className="ti ti-key" /> Key requirements
@@ -137,7 +149,7 @@ export default function JobDetail({ job, onClose, onStatusChange }) {
             </div>
           )}
 
-          {progress && (
+          {job.match_score != null && progress && (
             <div>
               <div className="ht-section-head gray">
                 <i className="ti ti-chart-bar" /> Skill alignment
