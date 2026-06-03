@@ -38,7 +38,7 @@ export default function JobList({
   if (jobs.length === 0) {
     return (
       <div className="ht-job-list">
-        <div className="flex justify-between items-center w-full mb-6 pb-2 border-b border-gray-100">
+        <div className="flex justify-between items-center w-full mb-2 pb-2 border-b border-gray-100">
           <div className="flex items-center gap-3">
             <span className="ht-list-title">Select All</span>
           </div>
@@ -64,7 +64,7 @@ export default function JobList({
 
   return (
     <div className="ht-job-list">
-      <div className="flex justify-between items-center w-full mb-6 pb-2 border-b border-gray-100">
+      <div className="flex justify-between items-center w-full mb-2 pb-2 border-b border-gray-100">
         {/* Left: Select All + Title */}
         <div className="flex items-center gap-3">
           <span
