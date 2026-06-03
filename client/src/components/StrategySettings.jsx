@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 const DEFAULTS = {
   visaStatus: 'PGWP',
@@ -105,18 +105,31 @@ function apiToForm(data) {
   };
 }
 
-export default function StrategySettings({ onClose }) {
+export default function StrategySettings({ trackId, track, onClose }) {
   const [form, setForm] = useState(DEFAULTS);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // Resume upload state
+  const fileInputRef = useRef(null);
+  const [resumeFilename, setResumeFilename] = useState(track?.resume_file_path || null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadMsg, setUploadMsg] = useState('');
+
   useEffect(() => {
-    fetch('/api/strategy')
+    setResumeFilename(track?.resume_file_path || null);
+  }, [track]);
+
+  useEffect(() => {
+    if (!trackId) return;
+    setLoading(true);
+    setSaved(false);
+    fetch(`/api/strategy?track_id=${encodeURIComponent(trackId)}`)
       .then(r => r.json())
       .then(data => { setForm(apiToForm(data)); setLoading(false); })
       .catch(() => { setLoading(false); });
-  }, []);
+  }, [trackId]);
 
   function set(key, value) {
     setForm(f => ({ ...f, [key]: value }));
@@ -160,6 +173,7 @@ export default function StrategySettings({ onClose }) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        track_id:             trackId,
         visa_status:          form.visaStatus,
         languages:            form.languages,
         has_vehicle:          form.hasDriversLicense,
@@ -176,6 +190,38 @@ export default function StrategySettings({ onClose }) {
       .catch(() => setError('Failed to save. Check server connection.'));
   }
 
+  async function handleResumeUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setUploadMsg('');
+    const formData = new FormData();
+    formData.append('resume', file);
+    try {
+      const r = await fetch(`/api/tracks/${encodeURIComponent(trackId)}/resume`, {
+        method: 'POST',
+        body: formData,
+      });
+      if (!r.ok) throw new Error('Upload failed');
+      const data = await r.json();
+      setResumeFilename(data.filename);
+      setUploadMsg('Resume updated.');
+    } catch {
+      setUploadMsg('Upload failed — server error.');
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex flex-col flex-1 items-center justify-center" style={{ background: 'var(--ht-bg-2)', color: 'var(--ht-text-3)', fontSize: 13 }}>
+        Loading…
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col flex-1 overflow-hidden" style={{ background: 'var(--ht-bg-2)' }}>
       {/* Page header */}
@@ -188,7 +234,7 @@ export default function StrategySettings({ onClose }) {
             Strategy Settings
           </h1>
           <p className="text-xs mt-0.5" style={{ color: 'var(--ht-text-3)' }}>
-            Define your candidate profile and job preferences to guide AI analysis
+            {track ? `${track.emoji ? track.emoji + ' ' : ''}${track.name}` : trackId} · AI candidate profile and job preferences
           </p>
         </div>
         <button onClick={onClose} className="ht-btn" style={{ padding: '6px 12px' }}>
@@ -200,6 +246,55 @@ export default function StrategySettings({ onClose }) {
       {/* Scrollable body */}
       <form onSubmit={handleSave} className="flex-1 overflow-y-auto px-8 py-6">
         <div className="max-w-2xl mx-auto flex flex-col gap-5">
+
+          {/* ── Resume ── */}
+          <Section title="Resume" icon="ti-file-text">
+            <Field label="Current Resume">
+              {resumeFilename ? (
+                <div className="flex items-center gap-3">
+                  <a
+                    href={`/resumes/${resumeFilename}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="ht-btn"
+                    style={{ padding: '6px 12px', textDecoration: 'none' }}
+                  >
+                    <i className="ti ti-eye" />
+                    View PDF
+                  </a>
+                  <span className="text-xs" style={{ color: 'var(--ht-text-3)' }}>{resumeFilename}</span>
+                </div>
+              ) : (
+                <p className="text-xs" style={{ color: 'var(--ht-text-3)' }}>No resume uploaded for this track.</p>
+              )}
+            </Field>
+
+            <Field label={resumeFilename ? 'Replace Resume' : 'Upload Resume'}>
+              <div className="flex items-center gap-3">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="application/pdf"
+                  onChange={handleResumeUpload}
+                  style={{ display: 'none' }}
+                  id="resume-upload"
+                />
+                <label
+                  htmlFor="resume-upload"
+                  className="ht-btn"
+                  style={{ padding: '6px 12px', cursor: 'pointer' }}
+                >
+                  <i className={`ti ${uploading ? 'ti-loader' : 'ti-upload'}`} />
+                  {uploading ? 'Uploading…' : 'Choose PDF'}
+                </label>
+                {uploadMsg && (
+                  <span className="text-xs" style={{ color: uploadMsg.includes('failed') ? '#e05' : 'var(--ht-green)' }}>
+                    {uploadMsg}
+                  </span>
+                )}
+              </div>
+            </Field>
+          </Section>
 
           {/* ── Candidate Profile ── */}
           <Section title="Candidate Profile" icon="ti-user">

@@ -94,6 +94,75 @@ function getDb() {
     try { _db.prepare("ALTER TABLE user_strategy ADD COLUMN work_model TEXT DEFAULT '[]'").run(); } catch {}
     _db.pragma('user_version = 4');
   }
+  if (ver < 5) {
+    const configTracks = require('../config/tracks');
+
+    _db.exec(`
+      CREATE TABLE IF NOT EXISTS job_tracks (
+        id               TEXT PRIMARY KEY,
+        name             TEXT NOT NULL,
+        emoji            TEXT DEFAULT '',
+        resume_file_path TEXT,
+        created_at       TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    const insertTrack = _db.prepare(
+      'INSERT OR IGNORE INTO job_tracks (id, name, emoji, resume_file_path) VALUES (?, ?, ?, ?)'
+    );
+    for (const t of configTracks) {
+      const filename = t.resume ? path.basename(t.resume) : null;
+      insertTrack.run(t.id, t.label, t.emoji || '', filename);
+    }
+
+    // Migrate user_strategy from integer PK (id=1) to text PK (track_id)
+    const stratCols = _db.pragma('table_info(user_strategy)');
+    const hasOldSchema = stratCols.some(c => c.name === 'id');
+    if (hasOldSchema) {
+      _db.exec(`
+        CREATE TABLE user_strategy_v5 (
+          track_id             TEXT PRIMARY KEY,
+          visa_status          TEXT DEFAULT 'PGWP',
+          languages            TEXT DEFAULT '["English"]',
+          has_vehicle          INTEGER DEFAULT 0,
+          security_clearance   INTEGER DEFAULT 0,
+          target_roles         TEXT DEFAULT '',
+          experience_level     TEXT DEFAULT '["Entry-level"]',
+          blacklisted_keywords TEXT DEFAULT '',
+          employment_type      TEXT DEFAULT 'any',
+          work_model           TEXT DEFAULT '[]'
+        )
+      `);
+      const firstTrackId = configTracks[0]?.id || 'it-support';
+      const existingRow = _db.prepare('SELECT * FROM user_strategy WHERE id = 1').get();
+      if (existingRow) {
+        _db.prepare(`
+          INSERT OR IGNORE INTO user_strategy_v5
+            (track_id, visa_status, languages, has_vehicle, security_clearance,
+             target_roles, experience_level, blacklisted_keywords, employment_type, work_model)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+          firstTrackId,
+          existingRow.visa_status, existingRow.languages, existingRow.has_vehicle,
+          existingRow.security_clearance, existingRow.target_roles, existingRow.experience_level,
+          existingRow.blacklisted_keywords, existingRow.employment_type || 'any',
+          existingRow.work_model || '[]'
+        );
+      }
+      _db.exec('DROP TABLE user_strategy');
+      _db.exec('ALTER TABLE user_strategy_v5 RENAME TO user_strategy');
+    }
+
+    // Seed default strategy row for every config track that doesn't have one yet
+    const insertStrat = _db.prepare(
+      'INSERT OR IGNORE INTO user_strategy (track_id, target_roles) VALUES (?, ?)'
+    );
+    for (const t of configTracks) {
+      insertStrat.run(t.id, t.label);
+    }
+
+    _db.pragma('user_version = 5');
+  }
 
   // Every startup: abandon any scrape runs that were left in 'running' state by a
   // previous server process (crash, restart, Ctrl-C). Without this, POST /scrape/:track

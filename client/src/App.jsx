@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import JobList from './components/JobList';
 import ScrapeProgress from './components/ScrapeProgress';
 import JobDetail from './components/JobDetail';
@@ -28,6 +28,12 @@ export default function App() {
   const [analyzingJobIds, setAnalyzingJobIds] = useState(new Set());
   const [filters, setFilters]         = useState({ tier: '', status: '', days: '', analysis: '' });
   const [sort, setSort]               = useState('score'); // 'score' | 'date'
+  const [showNewTrack, setShowNewTrack] = useState(false);
+  const [newTrackName, setNewTrackName] = useState('');
+  const [newTrackEmoji, setNewTrackEmoji] = useState('');
+  const [newTrackFile, setNewTrackFile] = useState(null);
+  const [newTrackError, setNewTrackError] = useState('');
+  const newTrackFileRef = useRef(null);
 
   useEffect(() => {
     fetch('/api/tracks')
@@ -209,6 +215,40 @@ export default function App() {
     setTimeout(() => setScrapeToast(null), 8000);
   }
 
+  async function handleCreateTrack(e) {
+    e.preventDefault();
+    setNewTrackError('');
+    const name = newTrackName.trim();
+    if (!name) return;
+    const id = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    try {
+      const r = await fetch('/api/tracks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, name, emoji: newTrackEmoji.trim() }),
+      });
+      if (!r.ok) {
+        const body = await r.json().catch(() => ({}));
+        throw new Error(body.error || 'Failed to create track');
+      }
+      if (newTrackFile) {
+        const fd = new FormData();
+        fd.append('resume', newTrackFile);
+        await fetch(`/api/tracks/${encodeURIComponent(id)}/resume`, { method: 'POST', body: fd });
+      }
+      const updated = await fetch('/api/tracks').then(r2 => r2.json());
+      setTracks(updated);
+      switchTrack(id);
+      setShowNewTrack(false);
+      setNewTrackName('');
+      setNewTrackEmoji('');
+      setNewTrackFile(null);
+      if (newTrackFileRef.current) newTrackFileRef.current.value = '';
+    } catch (err) {
+      setNewTrackError(err.message);
+    }
+  }
+
   function handleStatusChange(jobId, newStatus) {
     fetch(`/api/jobs/${jobId}/status`, {
       method: 'PATCH',
@@ -269,9 +309,17 @@ export default function App() {
                 onClick={() => switchTrack(t.id)}
                 className={`ht-tab${activeTrack === t.id ? ' active' : ''}`}
               >
-                {t.label}
+                {t.emoji ? `${t.emoji} ` : ''}{t.name}
               </button>
             ))}
+            <button
+              onClick={() => setShowNewTrack(true)}
+              className="ht-tab"
+              title="Add new track"
+              style={{ opacity: 0.6 }}
+            >
+              <i className="ti ti-plus" style={{ fontSize: 13 }} />
+            </button>
           </div>
         </div>
         <div className="ht-topbar-actions">
@@ -333,10 +381,77 @@ export default function App() {
         </div>
       )}
 
+      {/* New Track Modal */}
+      {showNewTrack && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 50,
+          background: 'rgba(0,0,0,0.45)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }} onClick={e => { if (e.target === e.currentTarget) setShowNewTrack(false); }}>
+          <div style={{
+            background: 'var(--ht-bg)', border: '0.5px solid var(--ht-border)',
+            borderRadius: 14, padding: 28, width: 380, display: 'flex', flexDirection: 'column', gap: 18,
+          }}>
+            <div>
+              <h2 style={{ fontSize: 16, fontWeight: 600, color: 'var(--ht-text)', margin: 0 }}>New Track</h2>
+              <p style={{ fontSize: 12, color: 'var(--ht-text-3)', marginTop: 4 }}>Create a new job search track with its own strategy and resume.</p>
+            </div>
+            <form onSubmit={handleCreateTrack} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <input
+                  type="text"
+                  placeholder="Emoji (optional)"
+                  value={newTrackEmoji}
+                  onChange={e => setNewTrackEmoji(e.target.value)}
+                  maxLength={4}
+                  style={{ width: 80, padding: '8px 10px', borderRadius: 8, fontSize: 13, background: 'var(--ht-bg-2)', border: '0.5px solid var(--ht-border-2)', color: 'var(--ht-text)', outline: 'none' }}
+                />
+                <input
+                  type="text"
+                  placeholder="Track name (e.g. Software Dev)"
+                  value={newTrackName}
+                  onChange={e => setNewTrackName(e.target.value)}
+                  required
+                  style={{ flex: 1, padding: '8px 12px', borderRadius: 8, fontSize: 13, background: 'var(--ht-bg-2)', border: '0.5px solid var(--ht-border-2)', color: 'var(--ht-text)', outline: 'none' }}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, color: 'var(--ht-text-3)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>
+                  Resume PDF (optional)
+                </label>
+                <input
+                  ref={newTrackFileRef}
+                  type="file"
+                  accept="application/pdf"
+                  onChange={e => setNewTrackFile(e.target.files?.[0] || null)}
+                  style={{ fontSize: 12, color: 'var(--ht-text-2)' }}
+                />
+              </div>
+              {newTrackError && (
+                <p style={{ fontSize: 12, color: '#e05', margin: 0 }}>{newTrackError}</p>
+              )}
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                <button type="button" className="ht-btn" onClick={() => setShowNewTrack(false)} style={{ padding: '7px 16px' }}>
+                  Cancel
+                </button>
+                <button type="submit" className="ht-btn ht-btn-dark" style={{ padding: '7px 16px' }}>
+                  <i className="ti ti-plus" />
+                  Create Track
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Main */}
       <div className="ht-main">
         {view === 'settings' ? (
-          <StrategySettings onClose={() => setView('jobs')} />
+          <StrategySettings
+            trackId={activeTrack}
+            track={tracks.find(t => t.id === activeTrack)}
+            onClose={() => setView('jobs')}
+          />
         ) : (
           <>
             {/* Sidebar */}

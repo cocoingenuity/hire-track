@@ -77,7 +77,7 @@ async function runAnalysisJob(db, trackId, runId) {
     return;
   }
 
-  const strategy = getStrategy(db);
+  const strategy = getStrategy(db, trackId);
   console.log(`[analyze/${trackId}] strategy: visa=${strategy.visa_status} langs=${strategy.languages.join(',')} vehicle=${strategy.has_vehicle} clearance=${strategy.security_clearance}`);
 
   const unanalyzed = db
@@ -167,7 +167,7 @@ async function runBatchAnalysis(db, trackId, runId, jobIds) {
     return;
   }
 
-  const strategy = getStrategy(db);
+  const strategy = getStrategy(db, trackId);
   const jobs = db
     .prepare(`SELECT * FROM jobs WHERE id IN (${jobIds.map(() => '?').join(',')})`)
     .all(...jobIds);

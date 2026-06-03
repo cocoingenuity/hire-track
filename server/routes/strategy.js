@@ -22,6 +22,7 @@ function parseJsonArray(raw, fallback) {
 function rowToJson(row) {
   if (!row) return DEFAULTS;
   return {
+    track_id:             row.track_id,
     visa_status:          row.visa_status,
     languages:            parseJsonArray(row.languages, ['English']),
     has_vehicle:          row.has_vehicle === 1,
@@ -35,24 +36,29 @@ function rowToJson(row) {
 }
 
 router.get('/', (req, res) => {
+  const { track_id } = req.query;
+  if (!track_id) return res.status(400).json({ error: 'track_id query param required' });
   const db = getDb();
-  const row = db.prepare('SELECT * FROM user_strategy WHERE id = 1').get();
+  const row = db.prepare('SELECT * FROM user_strategy WHERE track_id = ?').get(track_id);
   res.json(rowToJson(row));
 });
 
 router.post('/', (req, res) => {
-  const { visa_status, languages, has_vehicle, security_clearance,
+  const { track_id, visa_status, languages, has_vehicle, security_clearance,
           target_roles, experience_level, blacklisted_keywords,
           employment_type, work_model } = req.body;
+
+  if (!track_id) return res.status(400).json({ error: 'track_id required' });
 
   const db = getDb();
   db.prepare(`
     INSERT OR REPLACE INTO user_strategy
-      (id, visa_status, languages, has_vehicle, security_clearance,
+      (track_id, visa_status, languages, has_vehicle, security_clearance,
        target_roles, experience_level, blacklisted_keywords,
        employment_type, work_model)
-    VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
+    track_id,
     visa_status,
     JSON.stringify(Array.isArray(languages) ? languages : []),
     has_vehicle ? 1 : 0,
@@ -64,7 +70,7 @@ router.post('/', (req, res) => {
     JSON.stringify(Array.isArray(work_model) ? work_model : []),
   );
 
-  const saved = db.prepare('SELECT * FROM user_strategy WHERE id = 1').get();
+  const saved = db.prepare('SELECT * FROM user_strategy WHERE track_id = ?').get(track_id);
   res.json(rowToJson(saved));
 });
 
