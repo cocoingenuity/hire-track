@@ -77,7 +77,28 @@ router.get('/status/:track', (req, res) => {
 
   if (!run) return res.json({ status: 'idle' });
 
-  res.json(run);
+  if (run.status !== 'done') return res.json(run);
+
+  // Compute human-readable summary for the frontend toast
+  const newAdded   = run.jobs_new      || 0;
+  const found      = run.jobs_found    || 0;
+  const analyzed   = run.jobs_analyzed || 0;
+  const duplicates = found - newAdded;
+
+  let message, toastType;
+  if (analyzed > 0 && newAdded === 0) {
+    // Batch analysis run
+    message   = `${analyzed} job${analyzed === 1 ? '' : 's'} analyzed.`;
+    toastType = 'success';
+  } else if (newAdded > 0) {
+    message   = `${newAdded} new job${newAdded === 1 ? '' : 's'} added${duplicates > 0 ? ` · ${duplicates} duplicate${duplicates === 1 ? '' : 's'} skipped` : ''}.`;
+    toastType = 'success';
+  } else {
+    message   = `No new jobs found — all ${found} scraped were already in your list.`;
+    toastType = 'info';
+  }
+
+  res.json({ ...run, duplicates, message, toastType });
 });
 
 module.exports = router;

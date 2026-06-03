@@ -21,6 +21,7 @@ export default function App() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshMode, setRefreshMode] = useState('scrape');
   const [pauseState, setPauseState] = useState(null); // null | 'paused'
+  const [scrapeToast, setScrapeToast] = useState(null); // { type: 'success'|'info'|'error', message }
   const [jobs, setJobs]               = useState([]);
   const [selectedJob, setSelectedJob] = useState(null);
   const [selectedJobIds, setSelectedJobIds] = useState(new Set());
@@ -63,9 +64,14 @@ export default function App() {
   // not on every re-render triggered by selectedJob — preventing pagination from resetting.
   const filteredJobs = useMemo(() => {
     const filtered = jobs.filter(job => {
-      // Hide 'Not interested' and 'Applied' jobs unless explicitly filtered to them
-      if (job.status === 'Not interested' && filters.status !== 'Not interested') return false;
-      if (job.status === 'Applied' && filters.status !== 'Applied') return false;
+      // Hide Not interested / Applied only in the default (no active filter) view.
+      // When any tier, analysis, or date filter is active the user wants the full picture,
+      // e.g. seeing their Applied Strong-Match jobs when filtering by "Strong Match".
+      const hasNonStatusFilter = filters.tier || filters.analysis || filters.days;
+      if (!hasNonStatusFilter) {
+        if (job.status === 'Not interested' && filters.status !== 'Not interested') return false;
+        if (job.status === 'Applied'        && filters.status !== 'Applied')        return false;
+      }
       if (filters.tier   && job.match_tier !== filters.tier)   return false;
       if (filters.status && job.status     !== filters.status) return false;
       if (filters.analysis === 'analyzed'   && job.match_score == null)  return false;
@@ -188,12 +194,19 @@ export default function App() {
     fetch(`/api/stop/${activeTrack}`, { method: 'POST' });
   }
 
-  function handleScrapeComplete() {
+  function handleScrapeComplete(runData) {
     setIsRefreshing(false);
     setPauseState(null);
     setAnalyzingJobIds(new Set());
     setSelectedJobIds(new Set());
     loadJobs(activeTrack);
+
+    if (!runData || runData.status === 'error') {
+      setScrapeToast({ type: 'error', message: runData?.error_msg ? `Failed: ${runData.error_msg}` : 'Scrape failed — check server logs.' });
+    } else {
+      setScrapeToast({ type: runData.toastType || 'info', message: runData.message || 'Done.' });
+    }
+    setTimeout(() => setScrapeToast(null), 8000);
   }
 
   function handleStatusChange(jobId, newStatus) {
@@ -304,6 +317,21 @@ export default function App() {
         onStop={handleStop}
         pauseState={pauseState}
       />
+
+      {scrapeToast && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10, padding: '7px 18px', fontSize: 12.5,
+          background: scrapeToast.type === 'success' ? '#F0FBF6' : scrapeToast.type === 'error' ? '#FEF2F2' : 'var(--ht-bg)',
+          color:      scrapeToast.type === 'success' ? '#0F6E56' : scrapeToast.type === 'error' ? '#B91C1C' : 'var(--ht-text-2)',
+          borderBottom: '0.5px solid var(--ht-border)',
+        }}>
+          <i className={`ti ${scrapeToast.type === 'success' ? 'ti-circle-check' : scrapeToast.type === 'error' ? 'ti-alert-circle' : 'ti-info-circle'}`} style={{ fontSize: 14 }} />
+          <span style={{ flex: 1 }}>{scrapeToast.message}</span>
+          <button onClick={() => setScrapeToast(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', opacity: 0.55, padding: 0 }}>
+            <i className="ti ti-x" style={{ fontSize: 12 }} />
+          </button>
+        </div>
+      )}
 
       {/* Main */}
       <div className="ht-main">
