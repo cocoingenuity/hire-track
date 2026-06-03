@@ -161,26 +161,26 @@ body {
 
 /* ─── Job cards ──────────────────────────────────────────────── */
 .ht-job-card {
-  background: var(--ht-bg-2); border: 0.5px solid rgba(0,0,0,0.08);
-  border-radius: var(--ht-r-lg); padding: 14px 16px;
-  cursor: pointer; transition: all 0.2s ease;
+  background: var(--ht-bg-2); border: 0.5px solid rgba(0,0,0,0.10);
+  border-radius: var(--ht-r-lg); padding: 13px 15px;
+  cursor: pointer; transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
   display: flex; align-items: center; gap: 12px;
 }
 /* Checkbox hidden by default, revealed on hover or when checked */
 .ht-job-card .job-checkbox { opacity: 0; transition: opacity 0.15s; }
 .ht-job-card:hover .job-checkbox,
 .ht-job-card .job-checkbox.is-checked { opacity: 1; }
-.ht-job-card:hover { background: var(--ht-bg); border-color: rgba(0,0,0,0.13); box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.ht-job-card:hover { background: var(--ht-bg); border-color: rgba(0,0,0,0.14); }
 .ht-job-card.selected { background: var(--ht-bg); border-color: #5DCAA5; box-shadow: 0 0 0 1px #5DCAA5; }
 .ht-job-card-left { flex: 1; min-width: 0; }
 .ht-job-title {
-  font-size: 15px; font-weight: 600; color: var(--ht-text);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px;
+  font-size: 13.5px; font-weight: 500; color: var(--ht-text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px;
 }
-.ht-job-meta { font-size: 13px; color: var(--ht-text-3); display: flex; align-items: center; gap: 5px; flex-wrap: nowrap; overflow: hidden; }
+.ht-job-meta { font-size: 12px; color: var(--ht-text-3); display: flex; align-items: center; gap: 5px; flex-wrap: nowrap; overflow: hidden; }
 .ht-job-meta > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ht-meta-dot { width: 3px; height: 3px; border-radius: 50%; background: rgba(0,0,0,0.18); flex-shrink: 0; }
-.ht-job-card-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.ht-job-card-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 
 /* Score pill — replaces badge + circle */
 .ht-score-pill {
