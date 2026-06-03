@@ -163,6 +163,55 @@ function getDb() {
 
     _db.pragma('user_version = 5');
   }
+  if (ver < 6) {
+    // Create global_profile table (single row, id=1)
+    _db.exec(`
+      CREATE TABLE IF NOT EXISTS global_profile (
+        id                 INTEGER PRIMARY KEY DEFAULT 1,
+        visa_status        TEXT    DEFAULT 'PGWP',
+        languages          TEXT    DEFAULT '["English"]',
+        has_vehicle        INTEGER DEFAULT 0,
+        security_clearance INTEGER DEFAULT 0
+      )
+    `);
+
+    // Seed from first user_strategy row if it still has the global columns
+    const stratCols = _db.pragma('table_info(user_strategy)');
+    const hasGlobalCols = stratCols.some(c => c.name === 'visa_status');
+    if (hasGlobalCols) {
+      const firstRow = _db.prepare('SELECT * FROM user_strategy LIMIT 1').get();
+      if (firstRow) {
+        _db.prepare(`
+          INSERT OR IGNORE INTO global_profile (id, visa_status, languages, has_vehicle, security_clearance)
+          VALUES (1, ?, ?, ?, ?)
+        `).run(firstRow.visa_status, firstRow.languages, firstRow.has_vehicle, firstRow.security_clearance);
+      }
+
+      // Recreate user_strategy with only track-specific columns
+      _db.exec(`
+        CREATE TABLE user_strategy_v6 (
+          track_id             TEXT PRIMARY KEY,
+          target_roles         TEXT DEFAULT '',
+          experience_level     TEXT DEFAULT '["Entry-level"]',
+          blacklisted_keywords TEXT DEFAULT '',
+          employment_type      TEXT DEFAULT 'any',
+          work_model           TEXT DEFAULT '[]'
+        )
+      `);
+      _db.exec(`
+        INSERT INTO user_strategy_v6 (track_id, target_roles, experience_level, blacklisted_keywords, employment_type, work_model)
+        SELECT track_id, target_roles, experience_level, blacklisted_keywords, employment_type, work_model
+        FROM user_strategy
+      `);
+      _db.exec('DROP TABLE user_strategy');
+      _db.exec('ALTER TABLE user_strategy_v6 RENAME TO user_strategy');
+    }
+
+    // Ensure global_profile row exists
+    _db.prepare("INSERT OR IGNORE INTO global_profile (id) VALUES (1)").run();
+
+    _db.pragma('user_version = 6');
+  }
 
   // Every startup: abandon any scrape runs that were left in 'running' state by a
   // previous server process (crash, restart, Ctrl-C). Without this, POST /scrape/:track

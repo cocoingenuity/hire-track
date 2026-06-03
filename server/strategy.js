@@ -1,8 +1,4 @@
 const DEFAULTS = {
-  visa_status: 'PGWP',
-  languages: ['English'],
-  has_vehicle: false,
-  security_clearance: false,
   target_roles: '',
   experience_level: ['Entry-level'],
   blacklisted_keywords: '',
@@ -19,11 +15,7 @@ function getStrategy(db, trackId) {
   const row = db.prepare('SELECT * FROM user_strategy WHERE track_id = ?').get(trackId);
   if (!row) return DEFAULTS;
   return {
-    visa_status:          row.visa_status          || DEFAULTS.visa_status,
-    languages:            parseJsonArray(row.languages, ['English']),
-    has_vehicle:          row.has_vehicle           === 1,
-    security_clearance:   row.security_clearance    === 1,
-    target_roles:         row.target_roles          || '',
+    target_roles:         row.target_roles         || '',
     experience_level:     parseJsonArray(row.experience_level, ['Entry-level']),
     blacklisted_keywords: row.blacklisted_keywords  || '',
     employment_type:      row.employment_type       || 'any',
