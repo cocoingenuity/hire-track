@@ -310,15 +310,45 @@ export default function App() {
             HireTrack
           </div>
           <div className="ht-tabs">
-            {tracks.map(t => (
-              <button
-                key={t.id}
-                onClick={() => switchTrack(t.id)}
-                className={`ht-tab${activeTrack === t.id ? ' active' : ''}`}
-              >
-                {t.emoji ? `${t.emoji} ` : ''}{t.name}
-              </button>
-            ))}
+            {tracks.map(t => {
+              const isActive = activeTrack === t.id;
+              const label = t.name.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '').trim();
+              return (
+                <span key={t.id} style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+                  <button
+                    onClick={() => switchTrack(t.id)}
+                    className={`ht-tab${isActive ? ' active' : ''}`}
+                    style={{ paddingRight: isActive ? 22 : undefined }}
+                  >
+                    {label}
+                  </button>
+                  {isActive && (
+                    <button
+                      onClick={e => {
+                        e.stopPropagation();
+                        if (!confirm(`Delete "${label}" and all its job data? This cannot be undone.`)) return;
+                        fetch(`/api/tracks/${encodeURIComponent(t.id)}`, { method: 'DELETE' })
+                          .then(r => r.ok ? r.json() : Promise.reject())
+                          .then(() => {
+                            const remaining = tracks.filter(x => x.id !== t.id);
+                            setTracks(remaining);
+                            switchTrack(remaining.length > 0 ? remaining[0].id : null);
+                          })
+                          .catch(() => alert('Failed to delete track.'));
+                      }}
+                      title={`Delete ${label}`}
+                      style={{
+                        position: 'absolute', right: 4, top: '50%', transform: 'translateY(-50%)',
+                        background: 'none', border: 'none', cursor: 'pointer', padding: '0 1px',
+                        color: 'var(--ht-text-3)', lineHeight: 1, fontSize: 11,
+                      }}
+                    >
+                      <i className="ti ti-x" />
+                    </button>
+                  )}
+                </span>
+              );
+            })}
             <button
               onClick={() => setShowNewTrack(true)}
               className="ht-tab"

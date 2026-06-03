@@ -50,8 +50,10 @@ router.post('/', (req, res) => {
 router.delete('/:id', (req, res) => {
   const { id } = req.params;
   const db = getDb();
-  db.prepare('DELETE FROM job_tracks WHERE id = ?').run(id);
+  db.prepare('DELETE FROM jobs WHERE track = ?').run(id);
+  db.prepare('DELETE FROM scrape_runs WHERE track = ?').run(id);
   db.prepare('DELETE FROM user_strategy WHERE track_id = ?').run(id);
+  db.prepare('DELETE FROM job_tracks WHERE id = ?').run(id);
   res.json({ ok: true });
 });
 
