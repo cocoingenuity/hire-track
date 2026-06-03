@@ -32,16 +32,17 @@ export default function JobCard({ job, isSelected, onSelect, onStatusChange, isC
       onClick={() => onSelect(job)}
       className={`ht-job-card${isSelected ? ' selected' : ''}`}
     >
-      {/* Checkbox — w-5 h-5 matches the Select All in the header */}
+      {/* Checkbox — small and subtle; revealed by CSS on card hover or when checked */}
       <span
-        className="flex items-center justify-center w-5 h-5 rounded flex-shrink-0 transition-colors cursor-pointer"
+        className={`job-checkbox flex items-center justify-center flex-shrink-0 rounded cursor-pointer transition-colors${isChecked ? ' is-checked' : ''}`}
         style={{
+          width: 14, height: 14,
           background: isChecked ? 'var(--ht-green)' : 'var(--ht-bg-3)',
           border: `1px solid ${isChecked ? 'var(--ht-green)' : 'var(--ht-border-2)'}`,
         }}
         onClick={handleCheck}
       >
-        {isChecked && <i className="ti ti-check" style={{ fontSize: 11, color: '#fff' }} />}
+        {isChecked && <i className="ti ti-check" style={{ fontSize: 9, color: '#fff' }} />}
       </span>
 
       {/* Title + meta */}

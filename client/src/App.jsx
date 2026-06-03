@@ -261,13 +261,15 @@ export default function App() {
               <button
                 onClick={handleAnalyzeSelected}
                 disabled={isRefreshing || selectedJobIds.size === 0}
-                className="ht-btn ht-btn-dark"
+                className={`ht-btn${selectedJobIds.size > 0 ? ' ht-btn-dark' : ''}`}
                 title={selectedJobIds.size === 0 ? 'Select jobs to analyze' : ''}
               >
                 <i className="ti ti-bolt" />
                 {isRefreshing && refreshMode === 'analyze'
                   ? 'Analyzing…'
-                  : `Analyze Selected (${selectedJobIds.size})`}
+                  : selectedJobIds.size > 0
+                    ? `Analyze (${selectedJobIds.size})`
+                    : 'Analyze'}
               </button>
             </>
           )}
