@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import JobList from './components/JobList';
 import ScrapeProgress from './components/ScrapeProgress';
 import JobDetail from './components/JobDetail';
+import StrategySettings from './components/StrategySettings';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -14,6 +15,7 @@ function jobDate(job) {
 }
 
 export default function App() {
+  const [view, setView]               = useState('jobs'); // 'jobs' | 'settings'
   const [tracks, setTracks]           = useState([]);
   const [activeTrack, setActiveTrack] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -223,13 +225,25 @@ export default function App() {
           </div>
         </div>
         <div className="ht-topbar-actions">
-          <button onClick={handleRefresh} disabled={isRefreshing} className="ht-btn">
-            <i className="ti ti-refresh" />
-            {isRefreshing && refreshMode === 'scrape' ? 'Scraping…' : 'Refresh'}
-          </button>
-          <button onClick={handleAnalyze} disabled={isRefreshing} className="ht-btn ht-btn-dark">
-            <i className="ti ti-bolt" />
-            {isRefreshing && refreshMode === 'analyze' ? 'Analyzing…' : 'Analyze'}
+          {view === 'jobs' && (
+            <>
+              <button onClick={handleRefresh} disabled={isRefreshing} className="ht-btn">
+                <i className="ti ti-refresh" />
+                {isRefreshing && refreshMode === 'scrape' ? 'Scraping…' : 'Refresh'}
+              </button>
+              <button onClick={handleAnalyze} disabled={isRefreshing} className="ht-btn ht-btn-dark">
+                <i className="ti ti-bolt" />
+                {isRefreshing && refreshMode === 'analyze' ? 'Analyzing…' : 'Analyze'}
+              </button>
+            </>
+          )}
+          <button
+            onClick={() => setView(v => v === 'settings' ? 'jobs' : 'settings')}
+            className={`ht-btn${view === 'settings' ? ' ht-btn-dark' : ''}`}
+            title="Strategy Settings"
+          >
+            <i className="ti ti-settings" />
+            Strategy
           </button>
         </div>
       </header>
@@ -247,80 +261,86 @@ export default function App() {
 
       {/* Main */}
       <div className="ht-main">
-        {/* Sidebar */}
-        <aside className="ht-sidebar">
-          <div className="ht-filter-group">
-            <div className="ht-filter-label">Match level</div>
-            {TIER_FILTERS.map(item => (
-              <button
-                key={item.v}
-                onClick={() => setFilter('tier', item.v)}
-                className={`ht-filter-item${filters.tier === item.v ? ' active' : ''}`}
-              >
-                <i className={`ti ${item.icon}`} />
-                <span>{item.label}</span>
-                <span className="ht-filter-count">{item.count}</span>
-              </button>
-            ))}
-          </div>
+        {view === 'settings' ? (
+          <StrategySettings onClose={() => setView('jobs')} />
+        ) : (
+          <>
+            {/* Sidebar */}
+            <aside className="ht-sidebar">
+              <div className="ht-filter-group">
+                <div className="ht-filter-label">Match level</div>
+                {TIER_FILTERS.map(item => (
+                  <button
+                    key={item.v}
+                    onClick={() => setFilter('tier', item.v)}
+                    className={`ht-filter-item${filters.tier === item.v ? ' active' : ''}`}
+                  >
+                    <i className={`ti ${item.icon}`} />
+                    <span>{item.label}</span>
+                    <span className="ht-filter-count">{item.count}</span>
+                  </button>
+                ))}
+              </div>
 
-          <div className="ht-sidebar-divider" />
+              <div className="ht-sidebar-divider" />
 
-          <div className="ht-filter-group">
-            <div className="ht-filter-label">Status</div>
-            {STATUS_FILTERS.map(item => (
-              <button
-                key={item.v}
-                onClick={() => setFilter('status', item.v)}
-                className={`ht-filter-item${filters.status === item.v ? ' active' : ''}`}
-              >
-                <i className={`ti ${item.icon}`} />
-                <span>{item.label}</span>
-                {item.count !== undefined && (
-                  <span className="ht-filter-count">{item.count}</span>
-                )}
-              </button>
-            ))}
-          </div>
+              <div className="ht-filter-group">
+                <div className="ht-filter-label">Status</div>
+                {STATUS_FILTERS.map(item => (
+                  <button
+                    key={item.v}
+                    onClick={() => setFilter('status', item.v)}
+                    className={`ht-filter-item${filters.status === item.v ? ' active' : ''}`}
+                  >
+                    <i className={`ti ${item.icon}`} />
+                    <span>{item.label}</span>
+                    {item.count !== undefined && (
+                      <span className="ht-filter-count">{item.count}</span>
+                    )}
+                  </button>
+                ))}
+              </div>
 
-          <div className="ht-sidebar-divider" />
+              <div className="ht-sidebar-divider" />
 
-          <div className="ht-filter-group">
-            <div className="ht-filter-label">Posted</div>
-            {DATE_FILTERS.map(item => (
-              <button
-                key={item.v}
-                onClick={() => setFilter('days', item.v)}
-                className={`ht-filter-item${filters.days === item.v ? ' active' : ''}`}
-              >
-                <i className={`ti ${item.icon}`} />
-                <span>{item.label}</span>
-                {item.count !== undefined && (
-                  <span className="ht-filter-count">{item.count}</span>
-                )}
-              </button>
-            ))}
-          </div>
-        </aside>
+              <div className="ht-filter-group">
+                <div className="ht-filter-label">Posted</div>
+                {DATE_FILTERS.map(item => (
+                  <button
+                    key={item.v}
+                    onClick={() => setFilter('days', item.v)}
+                    className={`ht-filter-item${filters.days === item.v ? ' active' : ''}`}
+                  >
+                    <i className={`ti ${item.icon}`} />
+                    <span>{item.label}</span>
+                    {item.count !== undefined && (
+                      <span className="ht-filter-count">{item.count}</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </aside>
 
-        {/* Content */}
-        <div className="ht-content">
-          <JobList
-            jobs={filteredJobs}
-            selectedJob={selectedJob}
-            onSelect={setSelectedJob}
-            onStatusChange={handleStatusChange}
-            sort={sort}
-            onSortChange={setSort}
-          />
-          {selectedJob && (
-            <JobDetail
-              job={selectedJob}
-              onClose={() => setSelectedJob(null)}
-              onStatusChange={handleStatusChange}
-            />
-          )}
-        </div>
+            {/* Content */}
+            <div className="ht-content">
+              <JobList
+                jobs={filteredJobs}
+                selectedJob={selectedJob}
+                onSelect={setSelectedJob}
+                onStatusChange={handleStatusChange}
+                sort={sort}
+                onSortChange={setSort}
+              />
+              {selectedJob && (
+                <JobDetail
+                  job={selectedJob}
+                  onClose={() => setSelectedJob(null)}
+                  onStatusChange={handleStatusChange}
+                />
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
