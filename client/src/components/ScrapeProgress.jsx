@@ -3,6 +3,9 @@ import { useEffect, useRef, useState } from 'react';
 export default function ScrapeProgress({ trackId, isActive, mode, onComplete, onPause, onResume, onStop, pauseState }) {
   const [stats, setStats] = useState(null);
   const intervalRef = useRef(null);
+  // Always call the latest onComplete without re-creating the polling interval.
+  const onCompleteRef = useRef(onComplete);
+  useEffect(() => { onCompleteRef.current = onComplete; });
 
   useEffect(() => {
     if (!isActive || !trackId) { setStats(null); return; }
@@ -15,10 +18,10 @@ export default function ScrapeProgress({ trackId, isActive, mode, onComplete, on
           // Only auto-dismiss on done/error; paused state is managed by Resume/Stop buttons
           if (data.status === 'done' || data.status === 'error') {
             clearInterval(intervalRef.current);
-            onComplete(data);
+            onCompleteRef.current(data);
           }
         })
-        .catch(() => { clearInterval(intervalRef.current); onComplete({ status: 'error' }); });
+        .catch(() => { clearInterval(intervalRef.current); onCompleteRef.current({ status: 'error' }); });
     }, 2000);
 
     return () => clearInterval(intervalRef.current);

@@ -34,6 +34,9 @@ export default function App() {
   const [newTrackFile, setNewTrackFile] = useState(null);
   const [newTrackError, setNewTrackError] = useState('');
   const newTrackFileRef = useRef(null);
+  // Tracks the most recently *requested* track so stale fetch responses
+  // from a previous tab can be discarded before calling setJobs.
+  const activeTrackRef = useRef(activeTrack);
 
   useEffect(() => {
     fetch('/api/tracks')
@@ -44,9 +47,13 @@ export default function App() {
 
   function loadJobs(trackId) {
     if (!trackId) return;
+    activeTrackRef.current = trackId;
     fetch(`/api/jobs?track=${trackId}`)
       .then(r => r.json())
-      .then(setJobs)
+      .then(data => {
+        // Discard if the user switched tabs while this fetch was in-flight.
+        if (activeTrackRef.current === trackId) setJobs(data);
+      })
       .catch(err => console.error('Failed to load jobs:', err));
   }
 
