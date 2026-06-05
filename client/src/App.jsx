@@ -195,8 +195,10 @@ export default function App() {
 
   function handleResume() {
     setPauseState(null);
-    setRefreshMode('analyze');
-    fetch(`/api/analyze/${activeTrack}`, { method: 'POST' })
+    const endpoint = refreshMode === 'scrape'
+      ? `/api/scrape/${activeTrack}`
+      : `/api/analyze/${activeTrack}`;
+    fetch(endpoint, { method: 'POST' })
       .catch(() => setIsRefreshing(false));
   }
 
