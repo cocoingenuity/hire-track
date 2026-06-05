@@ -46,10 +46,12 @@ async function expandQueries(trackName, existingRoles) {
     const text = (data.choices?.[0]?.message?.content || '').trim();
     if (!text) return null;
 
+    console.log(`[expandQueries] raw response: ${text.substring(0, 300)}`);
+
     const queries = text
-      .split(',')
-      .map(q => q.trim())
-      .filter(Boolean);
+      .split(/[\n,]+/)
+      .map(q => q.replace(/^[\s\d]+[.)]\s*/, '').trim())
+      .filter(q => q.length > 1 && q.length < 80);
 
     if (queries.length === 0) return null;
 
