@@ -3,6 +3,7 @@ const DEFAULTS = {
   languages: ['English'],
   has_vehicle: false,
   security_clearance: false,
+  candidate_note: 'Graduate (Computer Programming diploma, Apr 2025), on PGWP — eligible for full-time and new-grad roles, NOT a student (cannot take co-op/internship roles requiring enrollment).',
 };
 
 function parseJsonArray(raw, fallback) {
@@ -18,6 +19,7 @@ function getProfile(db) {
     languages:          parseJsonArray(row.languages, ['English']),
     has_vehicle:        row.has_vehicle        === 1,
     security_clearance: row.security_clearance === 1,
+    candidate_note:     row.candidate_note     || DEFAULTS.candidate_note,
   };
 }
 

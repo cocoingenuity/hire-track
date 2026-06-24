@@ -7,6 +7,9 @@ const DB_PATH = isTest
   ? ':memory:'
   : path.join(__dirname, '../data/hiretrack.db');
 
+const CANDIDATE_NOTE =
+  'Graduate (Computer Programming diploma, Apr 2025), on PGWP — eligible for full-time and new-grad roles, NOT a student (cannot take co-op/internship roles requiring enrollment).';
+
 let _db = null;
 
 function getDb() {
@@ -171,7 +174,8 @@ function getDb() {
         visa_status        TEXT    DEFAULT 'PGWP',
         languages          TEXT    DEFAULT '["English"]',
         has_vehicle        INTEGER DEFAULT 0,
-        security_clearance INTEGER DEFAULT 0
+        security_clearance INTEGER DEFAULT 0,
+        candidate_note     TEXT
       )
     `);
 
@@ -211,6 +215,14 @@ function getDb() {
     _db.prepare("INSERT OR IGNORE INTO global_profile (id) VALUES (1)").run();
 
     _db.pragma('user_version = 6');
+  }
+  if (ver < 7) {
+    // Add a free-text candidate note to global_profile. The DEFAULT clause is
+    // kept out of the DDL (long text with quotes/parens is fragile in SQLite);
+    // backfill via a parameterized UPDATE instead.
+    try { _db.prepare('ALTER TABLE global_profile ADD COLUMN candidate_note TEXT').run(); } catch {}
+    _db.prepare('UPDATE global_profile SET candidate_note = ? WHERE candidate_note IS NULL').run(CANDIDATE_NOTE);
+    _db.pragma('user_version = 7');
   }
 
   // Every startup: abandon any scrape runs that were left in 'running' state by a

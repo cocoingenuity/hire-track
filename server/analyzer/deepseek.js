@@ -16,18 +16,10 @@ function buildStrategySection(strategy) {
   const employmentType  = s.employment_type      || 'any';
   const workModel       = Array.isArray(s.work_model) ? s.work_model : [];
 
+  // PR/citizenship and security clearance are now handled deterministically
+  // (see server/analyzer/blockers.js, applied in the analyze() route); they are
+  // intentionally NOT given to the LLM, which previously over-/under-applied them.
   const blockers = [];
-  const needsPR = visaStatus !== 'PR' && visaStatus !== 'Citizen';
-  if (needsPR) {
-    blockers.push(
-      `${blockers.length + 1}. Job requires Canadian Permanent Residency or Citizenship (candidate is on ${visaStatus} and does not qualify)`
-    );
-  }
-  if (!hasClearance) {
-    blockers.push(
-      `${blockers.length + 1}. Job requires Canadian security clearance that the candidate does not hold`
-    );
-  }
   if (!languages.includes('French')) {
     blockers.push(
       `${blockers.length + 1}. Job requires French language proficiency (candidate does not speak French)`
@@ -45,6 +37,7 @@ function buildStrategySection(strategy) {
   }
 
   const candidateContext = [
+    s.candidate_note && `- Candidate: ${s.candidate_note}`,
     `- Immigration status: ${visaStatus}`,
     `- Languages: ${languages.join(', ')}`,
     `- Has vehicle / G license: ${hasVehicle ? 'Yes' : 'No'}`,
@@ -122,6 +115,8 @@ Each item in strengths, gaps, and key_requirements must be a single string forma
 noc_code must use the Canadian NOC 2021 classification (5-digit codes). Example: "22220 – Computer Network Technicians".
 teer_level is the TEER level from NOC 2021 (0–5). It equals the second digit of the 5-digit NOC code — e.g. NOC 22220 → TEER 2.
 ${blockersSection ? '\n' + blockersSection : ''}${blacklistInstruction}
+
+Score skill and experience fit ONLY. Do NOT lower the score for immigration status, security clearance, or co-op/internship eligibility — those disqualifiers are evaluated deterministically outside this prompt.
 
 Scoring rubric — you MUST use the full 0–100 range and produce differentiated scores:
 - 90–100 Strong Match: Candidate meets virtually every requirement; directly relevant experience; minimal ramp-up needed

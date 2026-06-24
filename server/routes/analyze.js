@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { getDb } = require('../db');
 const { analyze } = require('../analyzer');
+const { detectHardBlockers, applyHardBlockers } = require('../analyzer/blockers');
 const { getResumeText } = require('../resumes');
 const { resume, isPaused, isStopped } = require('../pause');
 const { getStrategy } = require('../strategy');
@@ -107,8 +108,10 @@ async function runAnalysisJob(db, trackId, runId) {
 
     console.log(`[analyzer] → "${job.title.substring(0, 50)}" (id=${job.id})`);
     try {
-      const result = await analyze(resumeText, jobContext, strategy);
-      console.log(`[analyzer] ✓ score=${result.match_score} tier="${result.match_tier}"`);
+      const raw = await analyze(resumeText, jobContext, strategy);
+      const blocked = detectHardBlockers(jobContext, strategy);
+      const result = applyHardBlockers(raw, blocked);
+      console.log(`[analyzer] ✓ score=${result.match_score} tier="${result.match_tier}"${blocked.length ? ` (gated: ${blocked.length})` : ''}`);
       db.prepare(`
         UPDATE jobs SET
           match_score = ?, match_tier = ?,
@@ -196,8 +199,10 @@ async function runBatchAnalysis(db, trackId, runId, jobIds) {
 
     console.log(`[batch] → "${job.title.substring(0, 50)}" (id=${job.id})`);
     try {
-      const result = await analyze(resumeText, jobContext, strategy);
-      console.log(`[batch] ✓ score=${result.match_score} tier="${result.match_tier}"`);
+      const raw = await analyze(resumeText, jobContext, strategy);
+      const blocked = detectHardBlockers(jobContext, strategy);
+      const result = applyHardBlockers(raw, blocked);
+      console.log(`[batch] ✓ score=${result.match_score} tier="${result.match_tier}"${blocked.length ? ` (gated: ${blocked.length})` : ''}`);
       db.prepare(`
         UPDATE jobs SET
           match_score = ?, match_tier = ?,

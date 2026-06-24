@@ -71,6 +71,23 @@ function isFrenchDescription(text) {
 // Admin track allowlist — title must match at least one of these role types
 const ADMIN_TITLE_RE = /\b(administrative\s+assistant|admin\s+assistant|office\s+coordinator|operations?\s+coordinator|office\s+administrator|executive\s+assistant|program\s+coordinator|project\s+coordinator|office\s+manager|receptionist|administrative\s+coordinator)\b/i;
 
+// Software track allowlist — title must look like a software / web / app dev role.
+const SOFTWARE_TITLE_RE = /\b(software|developer|programmer|full[\s-]?stack|front[\s-]?end|back[\s-]?end|web|application|sde|sdet|devops|qa|test\s+automation)\b/i;
+
+// Hardware / low-level / non-software domains kept OUT of the software track.
+const SOFTWARE_DOMAIN_BLOCKERS = [
+  'fpga', 'vhdl', 'verilog', 'asic', 'rtl',
+  'analog', 'mixed-signal', 'ic design', 'integrated circuit', 'semiconductor',
+  'embedded', 'firmware', 'pcb', 'circuit', 'photonics', 'optical',
+  'rf engineer', 'hardware engineer', 'electrical engineer',
+  'mechanical engineer', 'power system', 'antenna',
+];
+
+// Senior-level title modifiers — kept off the junior/entry-level software list.
+// Fires ONLY on an explicit senior word; never on junior/intermediate/entry/
+// associate/new-grad or an unmodified title.
+const SOFTWARE_SENIOR_RE = /\b(senior|sr|lead|principal|staff|manager|director|architect)\b|\bin test\b/i;
+
 function shouldFilter(title, description, trackId) {
   if (FRENCH_TITLE_RE.test(title || '')) return true;
   const tl = (title || '').toLowerCase();
@@ -82,6 +99,16 @@ function shouldFilter(title, description, trackId) {
 
   if (trackId === 'admin') {
     return !ADMIN_TITLE_RE.test(title || '');
+  }
+
+  if (trackId === 'software-developer') {
+    // Drop hardware/embedded/IC/FPGA/analog noise and senior-level titles
+    // (candidate is junior/entry-level); otherwise require a software keyword.
+    // Unlike the IT branch this blocks only explicit senior modifiers
+    // (senior/lead/principal/staff/manager/director/in test) — not bare "engineer".
+    if (SOFTWARE_DOMAIN_BLOCKERS.some(phrase => tl.includes(phrase))) return true;
+    if (SOFTWARE_SENIOR_RE.test(title || '')) return true;
+    return !SOFTWARE_TITLE_RE.test(title || '');
   }
 
   // IT track: domain blockers + IT keyword allowlist
@@ -216,4 +243,4 @@ async function scrape(track, onJob) {
   }
 }
 
-module.exports = { scrape };
+module.exports = { scrape, shouldFilter };

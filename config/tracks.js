@@ -28,5 +28,24 @@ module.exports = [
       'Office Coordinator Ottawa',
       'Operations Assistant Ottawa'
     ]
+  },
+  {
+    id: 'software-developer',
+    label: 'Software Developer',
+    emoji: '💻',
+    resume: './resumes/software-developer.pdf',
+    queries: [
+      'Software Developer Ottawa',
+      'Software Engineer Ottawa',
+      'Full Stack Developer Ottawa',
+      'Backend Developer Ottawa',
+      'Frontend Developer Ottawa',
+      'Web Developer Ottawa',
+      'Application Developer Ottawa',
+      'Junior Software Developer Ottawa',
+      'QA Automation Engineer Ottawa',
+      'DevOps Engineer Ottawa',
+      'React Developer Ottawa'
+    ]
   }
 ];
