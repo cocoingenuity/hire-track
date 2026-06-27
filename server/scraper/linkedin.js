@@ -124,9 +124,6 @@ function shouldFilter(title, description, trackId) {
   if (dl.includes('5 years') && dl.includes('clearance')) return true;
   if (isFrenchDescription(dl)) return true;
 
-  // Custom searches: skip track-specific allowlist/blocklist filtering
-  if (trackId.startsWith('search:')) return false;
-
   if (trackId === 'admin') {
     return !ADMIN_TITLE_RE.test(title || '');
   }

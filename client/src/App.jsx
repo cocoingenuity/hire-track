@@ -41,21 +41,11 @@ export default function App() {
   // Tracks the most recently *requested* track so stale fetch responses
   // from a previous tab can be discarded before calling setJobs.
   const activeTrackRef = useRef(activeTrack);
-  const [customTab, setCustomTab]     = useState(null); // { id, label } | null
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResumeTrack, setSearchResumeTrack] = useState('');
-  const [searchError, setSearchError] = useState('');
 
   useEffect(() => {
     fetch('/api/tracks')
       .then(r => r.json())
-      .then(data => {
-        setTracks(data);
-        if (data.length > 0) {
-          setActiveTrack(data[0].id);
-          setSearchResumeTrack(data[0].id);
-        }
-      })
+      .then(data => { setTracks(data); if (data.length > 0) setActiveTrack(data[0].id); })
       .catch(err => console.error('Failed to load tracks:', err));
   }, []);
 
@@ -159,34 +149,6 @@ export default function App() {
     setAnalyzingJobIds(new Set());
     setFilters({ tier: '', status: '', days: '', analysis: '' });
     setSort('score');
-    setCustomTab(null);
-  }
-
-  function handleSearch(e) {
-    e.preventDefault();
-    if (!searchQuery.trim() || isRefreshing) return;
-    setSearchError('');
-    setRefreshMode('scrape');
-    setIsRefreshing(true);
-    fetch('/api/search', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: searchQuery.trim(), resume_track: searchResumeTrack }),
-    })
-      .then(r => r.ok ? r.json() : r.json().then(e => Promise.reject(e)))
-      .then(data => {
-        if (!data.track_id) throw new Error('No track_id in response');
-        const tab = { id: data.track_id, label: searchQuery.trim() };
-        setCustomTab(tab);
-        setActiveTrack(data.track_id);
-        setSelectedJob(null);
-        setFilters({ tier: '', status: '', days: '' });
-        setSort('score');
-      })
-      .catch(err => {
-        setIsRefreshing(false);
-        setSearchError(err?.error || err?.message || 'Search failed — is the server running?');
-      });
   }
 
   function toggleSelectJob(jobId) {
@@ -404,53 +366,10 @@ export default function App() {
             >
               <i className="ti ti-plus" style={{ fontSize: 13 }} />
             </button>
-            {customTab && (
-              <button
-                key={customTab.id}
-                onClick={() => { setActiveTrack(customTab.id); setSelectedJob(null); }}
-                className={`ht-tab ht-tab-custom${activeTrack === customTab.id ? ' active' : ''}`}
-              >
-                <i className="ti ti-search" />
-                {customTab.label}
-              </button>
-            )}
           </div>
         </div>
-
-        <form onSubmit={handleSearch} className="ht-search-form">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={e => { setSearchQuery(e.target.value); setSearchError(''); }}
-            placeholder="Search any job title…"
-            className={`ht-search-input${searchError ? ' ht-search-input-error' : ''}`}
-            disabled={isRefreshing}
-          />
-          <select
-            value={searchResumeTrack}
-            onChange={e => setSearchResumeTrack(e.target.value)}
-            className="ht-search-select"
-            disabled={isRefreshing}
-          >
-            {tracks.map(t => (
-              <option key={t.id} value={t.id}>{t.label} resume</option>
-            ))}
-          </select>
-          <button
-            type="submit"
-            disabled={isRefreshing || !searchQuery.trim()}
-            className="ht-btn"
-          >
-            <i className="ti ti-search" />
-            {isRefreshing && customTab ? 'Searching…' : 'Search'}
-          </button>
-          {searchError && (
-            <span className="ht-search-error">{searchError}</span>
-          )}
-        </form>
-
         <div className="ht-topbar-actions">
-          {view === 'jobs' && !activeTrack?.startsWith('search:') && (
+          {view === 'jobs' && (
             <>
               <button onClick={handleRefresh} disabled={isRefreshing} className="ht-btn">
                 <i className="ti ti-refresh" />
