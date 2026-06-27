@@ -6,6 +6,10 @@ import StrategySettings from './components/StrategySettings';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+// Non-actionable statuses hidden in the default view (when no status filter is
+// selected). Selecting any status filter overrides this and shows that status.
+const HIDDEN_STATUSES = ['Applied', 'Rejected', 'Not interested'];
+
 // Prefer date_posted (job listing date) over scraped_at for date filters.
 // date_posted is YYYY-MM-DD (parse as UTC midnight); scraped_at is "YYYY-MM-DD HH:MM:SS" (UTC).
 function jobDate(job) {
@@ -77,16 +81,15 @@ export default function App() {
   // not on every re-render triggered by selectedJob — preventing pagination from resetting.
   const filteredJobs = useMemo(() => {
     const filtered = jobs.filter(job => {
-      // Hide Not interested / Applied only in the default (no active filter) view.
-      // When any tier, analysis, or date filter is active the user wants the full picture,
-      // e.g. seeing their Applied Strong-Match jobs when filtering by "Strong Match".
-      const hasNonStatusFilter = filters.tier || filters.analysis || filters.days;
-      if (!hasNonStatusFilter) {
-        if (job.status === 'Not interested' && filters.status !== 'Not interested') return false;
-        if (job.status === 'Applied'        && filters.status !== 'Applied')        return false;
-      }
-      if (filters.tier   && job.match_tier !== filters.tier)   return false;
-      if (filters.status && job.status     !== filters.status) return false;
+      // Tier and status filters combine. When a specific status is selected, show
+      // only jobs with that status — together with the active tier, if any.
+      // e.g. "Strong Match" + "Applied" → only applied Strong-Match jobs.
+      if (filters.status && job.status !== filters.status) return false;
+      // Default focus (no status selected): hide non-actionable statuses
+      // (Applied / Rejected / Not interested) regardless of the tier filter,
+      // so the list stays on jobs worth acting on.
+      if (!filters.status && HIDDEN_STATUSES.includes(job.status)) return false;
+      if (filters.tier && job.match_tier !== filters.tier) return false;
       if (filters.analysis === 'analyzed'   && job.match_score == null)  return false;
       if (filters.analysis === 'unanalyzed' && job.match_score != null)  return false;
       if (filters.days) {
@@ -177,14 +180,18 @@ export default function App() {
   }
 
   function handleAnalyzeSelected() {
-    if (!activeTrack || isRefreshing || selectedJobIds.size === 0) return;
+    if (!activeTrack || isRefreshing) return;
+    const targetIds = selectedJobIds.size > 0
+      ? [...selectedJobIds]
+      : jobs.filter(j => j.match_score == null).map(j => j.id);
+    if (targetIds.length === 0) return;
     setRefreshMode('analyze');
     setIsRefreshing(true);
-    setAnalyzingJobIds(new Set(selectedJobIds));
+    setAnalyzingJobIds(new Set(targetIds));
     fetch('/api/analyze/batch', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ jobIds: [...selectedJobIds], trackId: activeTrack }),
+      body: JSON.stringify({ jobIds: targetIds, trackId: activeTrack }),
     }).catch(() => { setIsRefreshing(false); setAnalyzingJobIds(new Set()); });
   }
 
@@ -370,9 +377,8 @@ export default function App() {
               </button>
               <button
                 onClick={handleAnalyzeSelected}
-                disabled={isRefreshing || selectedJobIds.size === 0}
-                className={`ht-btn${selectedJobIds.size > 0 ? ' ht-btn-dark' : ''}`}
-                title={selectedJobIds.size === 0 ? 'Select jobs to analyze' : ''}
+                disabled={isRefreshing}
+                className="ht-btn ht-btn-dark"
               >
                 <i className="ti ti-bolt" />
                 {isRefreshing && refreshMode === 'analyze'
