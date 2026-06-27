@@ -101,9 +101,9 @@ Analyze how well this candidate matches this job. Return ONLY valid JSON with th
 {
   "match_score": <integer 0-100>,
   "match_tier": "<Strong Match|Good Match|Stretch|Skip>",
-  "strengths": ["Customer-facing IT support experience at Best Buy / 在百思买有面向客户的IT支持经验", "..."],
-  "gaps": ["No formal ITIL certification / 没有正式的ITIL认证", "..."],
-  "key_requirements": ["Help desk ticketing system experience / 有帮助台工单系统使用经验", "..."],
+  "strengths": ["Relevant hands-on experience in a required skill / 在某项必备技能上的相关实践经验", "..."],
+  "gaps": ["Missing a specific required qualification / 缺少某项特定的必备资格", "..."],
+  "key_requirements": ["A key skill or qualification the role requires / 该职位要求的一项关键技能或资格", "..."],
   "apply_recommendation": <true|false>,
   "one_line_pitch": "<personalized cover letter opener in English only>",
   "noc_code": "<5-digit NOC code> – <NOC job title>",
@@ -112,7 +112,7 @@ Analyze how well this candidate matches this job. Return ONLY valid JSON with th
 }
 
 Each item in strengths, gaps, and key_requirements must be a single string formatted as "English description / 简体中文翻译" — the slash separates the two languages.
-noc_code must use the Canadian NOC 2021 classification (5-digit codes). Example: "22220 – Computer Network Technicians".
+noc_code must use the Canadian NOC 2021 classification (5-digit codes). Example format: "22220 – <NOC job title>".
 teer_level is the TEER level from NOC 2021 (0–5). It equals the second digit of the 5-digit NOC code — e.g. NOC 22220 → TEER 2.
 ${blockersSection ? '\n' + blockersSection : ''}${blacklistInstruction}
 
