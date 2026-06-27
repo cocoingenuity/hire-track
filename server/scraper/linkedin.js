@@ -138,19 +138,26 @@ function shouldFilter(title, description, trackId) {
     return !SOFTWARE_TITLE_RE.test(title || '');
   }
 
-  // IT track: domain blockers + IT keyword allowlist
-  if (TITLE_DOMAIN_BLOCKERS.some(phrase => tl.includes(phrase))) return true;
-  // Senior-level gate (incl. the "Sr"/"Sr." abbreviation) — see regex comments above.
-  if (IT_SENIOR_RE.test(title || '')) {
-    if (IT_SENIOR_HARD_RE.test(title || '')) return true;          // 1. senior + leadership/eng
-    if (!IT_SENIOR_OK_RE.test(title || '')) return true;           // 2. senior, no entry-friendly role
-    if (IT_SENIOR_DOMAIN_RE.test(title || '')) return true;        // 3. senior + role + high-barrier domain
+  // IT-support track: domain blockers + IT keyword allowlist + senior gate.
+  if (trackId === 'it-support') {
+    if (TITLE_DOMAIN_BLOCKERS.some(phrase => tl.includes(phrase))) return true;
+    // Senior-level gate (incl. the "Sr"/"Sr." abbreviation) — see regex comments above.
+    if (IT_SENIOR_RE.test(title || '')) {
+      if (IT_SENIOR_HARD_RE.test(title || '')) return true;          // 1. senior + leadership/eng
+      if (!IT_SENIOR_OK_RE.test(title || '')) return true;           // 2. senior, no entry-friendly role
+      if (IT_SENIOR_DOMAIN_RE.test(title || '')) return true;        // 3. senior + role + high-barrier domain
+    }
+    // Require BOTH an IT-domain anchor AND a role-type word. A title with only a
+    // generic role word (analyst/coordinator/specialist) and no IT anchor is rejected.
+    const hasAnchor = IT_ANCHOR_RE.test(title || '') || IT_ACRONYM_RE.test(title || '');
+    const hasRole   = IT_ROLE_RE.test(title || '');
+    if (!hasAnchor || !hasRole) return true;
+    return false;
   }
-  // Require BOTH an IT-domain anchor AND a role-type word. A title with only a
-  // generic role word (analyst/coordinator/specialist) and no IT anchor is rejected.
-  const hasAnchor = IT_ANCHOR_RE.test(title || '') || IT_ACRONYM_RE.test(title || '');
-  const hasRole   = IT_ROLE_RE.test(title || '');
-  if (!hasAnchor || !hasRole) return true;
+
+  // Custom / UI-created tracks have no curated allowlist for an arbitrary role,
+  // so only the universal blockers above apply (French/bilingual, clearance,
+  // citizenship/PR, over-experience, G-license). Keep everything else.
   return false;
 }
 

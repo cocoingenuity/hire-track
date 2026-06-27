@@ -164,3 +164,25 @@ describe('shouldFilter — it-support track allowlist (anchor + role-type)', () 
     expect(shouldFilter('Systems Administrator', '', t)).toBe(false);
   });
 });
+
+describe('shouldFilter — custom/UI tracks use universal blockers only', () => {
+  const t = 'data-entry-clerk'; // any id that isn't a named branch
+
+  it('keeps non-IT titles the IT allowlist would have rejected', () => {
+    expect(shouldFilter('Data Entry Clerk', '', t)).toBe(false);
+    expect(shouldFilter('Data Entry Operator', '', t)).toBe(false);
+    expect(shouldFilter('Office Clerk', '', t)).toBe(false);
+    expect(shouldFilter('Records Clerk', '', t)).toBe(false);
+    expect(shouldFilter('Typist', '', t)).toBe(false);
+    // domain-blocker phrases (e.g. "administrative assistant") only apply to it-support
+    expect(shouldFilter('Administrative Assistant', '', t)).toBe(false);
+  });
+
+  it('still applies universal blockers (French / bilingual / clearance / PR / over-experience / G-license)', () => {
+    expect(shouldFilter('Analyste de données', '', t)).toBe(true);                         // French title
+    expect(shouldFilter('Bilingual Data Entry Clerk', '', t)).toBe(true);                  // bilingual
+    expect(shouldFilter('Data Entry Clerk', 'Must be a Canadian citizen', t)).toBe(true);  // citizenship/PR
+    expect(shouldFilter('Data Entry Clerk', 'Requires 10 years experience', t)).toBe(true);// over-experience
+    expect(shouldFilter('Data Entry Clerk', "Valid G driver's license required", t)).toBe(true); // G-license
+  });
+});
