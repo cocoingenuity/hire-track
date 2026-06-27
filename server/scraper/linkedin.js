@@ -5,9 +5,31 @@ const DELAY = () => 3000 + Math.random() * 3000;
 // Word-boundary match for common French job title words
 const FRENCH_TITLE_RE = /\b(subalterne|analyste|agente|responsable|adjointe?|coordonnatrice?|coordonnateur|technicienne?|sp[eé]cialiste|conseill[eè]re?|directrice|directeur|gestionnaire|ing[eé]nieure?|charg[eé]e?|principale?|soutien|pr[eé]pos[eé]e?|administratrice?|op[eé]rateur|op[eé]ratrice)\b/i;
 
-// IT/tech allowlist — title must contain at least one of these to be imported
-const IT_TITLE_RE = /\b(support|systems?|network|technician|help[\s-]?desk|desktop|infrastructure|security|analyst|administrator|engineer|specialist|coordinator|technical|cyber|cloud|data|software|developer|database)\b/i;
-const IT_ACRONYM_RE = /\bIT\b/; // case-sensitive to avoid matching "it"
+// IT/tech allowlist, split into two parts. A title qualifies only when it
+// contains BOTH an IT-domain anchor AND a role-type word — a bare generic word
+// like "analyst" or "coordinator" no longer lets a non-IT title through
+// (e.g. "Business Analyst", "FP&A Coordinator").
+//
+// IT_ANCHOR_RE — the domain signal: the title must actually reference IT/tech.
+const IT_ANCHOR_RE = /\b(ict|information\s+technology|systems?|network(?:ing)?|help[\s-]?desk|helpdesk|service[\s-]?desk|desktop|deskside|infrastructure|sysadmin|end[\s-]?user|user|eus|salesforce|servicenow|identity|access|applications?(?:\s+support)?|l[12]|tier\s?[12]|computer|hardware|server|cloud|cyber\w*|security|technical|database|telecom|voip)\b/i;
+const IT_ACRONYM_RE = /\bIT\b/; // case-sensitive anchor, to avoid matching the word "it"
+// IT_ROLE_RE — the role-type signal: paired with an anchor to confirm it's a job.
+const IT_ROLE_RE = /\b(technician|technologist|analyst|administrator|engineer|specialist|coordinator|consultant|support|agent|representative|officer|desk|manager|lead)\b/i;
+
+// Senior-level gate for the IT track, applied in three tiers:
+//   1. senior + a leadership/engineering role  → always blocked
+//   2. senior without an entry-friendly role   → blocked
+//   3. senior + entry-friendly role BUT a high-barrier sub-domain → blocked
+//      (identity mgmt / cybersecurity / cloud / devops / hpc / mainframe
+//       realistically require senior depth even for a "specialist" title)
+// Otherwise a senior + entry-friendly role (analyst/technician/support/
+// coordinator/specialist) is allowed. Matches "Senior", "Sr", and "Sr.".
+// consultant is intentionally NOT an OK role — senior consultant roles demand
+// more years than senior specialist roles.
+const IT_SENIOR_RE        = /\b(senior|sr)\b/i;
+const IT_SENIOR_HARD_RE   = /\b(architect|director|manager|engineer)\b/i;
+const IT_SENIOR_OK_RE     = /\b(analyst|technician|support|coordinator|specialist)\b/i;
+const IT_SENIOR_DOMAIN_RE = /\b(identity|cyber\w*|cloud|devops|hpc|mainframe)\b/i;
 
 // Non-IT domain phrases that veto an IT keyword match.
 // Handles cases where broad words like "engineer/specialist/coordinator" appear in
@@ -32,6 +54,11 @@ const TITLE_DOMAIN_BLOCKERS = [
   'hearing aid', 'audiolog',
   // Business / finance context
   'business planning', 'accident benefits',
+  'business analyst', 'financial', 'planning & analysis',
+  // Trades apprenticeships / non-IT engineering
+  'apprentice', 'electrical',
+  // Software-dev roles belong to the software-developer track, not IT support
+  'software developer',
   // Security clearance stated in the title itself
   'secret clearance',
   // Senior / specialist roles out of scope for IT support job search
@@ -113,12 +140,17 @@ function shouldFilter(title, description, trackId) {
 
   // IT track: domain blockers + IT keyword allowlist
   if (TITLE_DOMAIN_BLOCKERS.some(phrase => tl.includes(phrase))) return true;
-  // Block "senior" only when paired with a clearly senior-level role type.
-  // senior + analyst/specialist/support/consultant/technician are allowed.
-  if (tl.includes('senior') &&
-      ['architect', 'director', 'manager', 'engineer'].some(w => tl.includes(w))) return true;
-  // Reject titles with no IT keywords at all
-  if (!IT_TITLE_RE.test(title || '') && !IT_ACRONYM_RE.test(title || '')) return true;
+  // Senior-level gate (incl. the "Sr"/"Sr." abbreviation) — see regex comments above.
+  if (IT_SENIOR_RE.test(title || '')) {
+    if (IT_SENIOR_HARD_RE.test(title || '')) return true;          // 1. senior + leadership/eng
+    if (!IT_SENIOR_OK_RE.test(title || '')) return true;           // 2. senior, no entry-friendly role
+    if (IT_SENIOR_DOMAIN_RE.test(title || '')) return true;        // 3. senior + role + high-barrier domain
+  }
+  // Require BOTH an IT-domain anchor AND a role-type word. A title with only a
+  // generic role word (analyst/coordinator/specialist) and no IT anchor is rejected.
+  const hasAnchor = IT_ANCHOR_RE.test(title || '') || IT_ACRONYM_RE.test(title || '');
+  const hasRole   = IT_ROLE_RE.test(title || '');
+  if (!hasAnchor || !hasRole) return true;
   return false;
 }
 

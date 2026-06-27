@@ -90,3 +90,77 @@ describe('shouldFilter — software-developer track allowlist', () => {
     expect(shouldFilter('Marketing Manager', '', t)).toBe(true);
   });
 });
+
+describe('shouldFilter — it-support track allowlist (anchor + role-type)', () => {
+  const t = 'it-support';
+
+  it('keeps genuine IT roles that have both an anchor and a role word', () => {
+    expect(shouldFilter('IT Support Specialist', '', t)).toBe(false);
+    expect(shouldFilter('Helpdesk Analyst', '', t)).toBe(false);
+    expect(shouldFilter('Technical Support', '', t)).toBe(false);
+    expect(shouldFilter('Systems Administrator', '', t)).toBe(false);
+    expect(shouldFilter('Desktop Support Technician', '', t)).toBe(false);
+    expect(shouldFilter('IT Technician', '', t)).toBe(false);
+    expect(shouldFilter('Network Support Technician', '', t)).toBe(false);
+    expect(shouldFilter('Service Desk Analyst', '', t)).toBe(false);
+    expect(shouldFilter('End User Support', '', t)).toBe(false);
+    expect(shouldFilter('Computer Technician', '', t)).toBe(false);
+    expect(shouldFilter('Cybersecurity Analyst', '', t)).toBe(false);
+    expect(shouldFilter('IT Coordinator', '', t)).toBe(false);
+    // Broadened anchors: user/eus/salesforce/application support/L1-2/tier 1-2
+    expect(shouldFilter('Support Specialist II - User Enablement', '', t)).toBe(false);
+    expect(shouldFilter('L2 Support Engineer', '', t)).toBe(false);
+    expect(shouldFilter('Salesforce Administrator', '', t)).toBe(false);
+    expect(shouldFilter('Application Support Specialist', '', t)).toBe(false);
+    expect(shouldFilter('Tier 1 Support Analyst', '', t)).toBe(false);
+    expect(shouldFilter('ServiceNow Administrator', '', t)).toBe(false);
+    expect(shouldFilter('Specialist, Identity & Access Management', '', t)).toBe(false);
+    expect(shouldFilter('Deskside Support / Field Services', '', t)).toBe(false);
+    expect(shouldFilter('Specialist, Applications', '', t)).toBe(false);
+  });
+
+  it('drops generic non-IT titles that only match a bare role word', () => {
+    expect(shouldFilter('Business Analyst', '', t)).toBe(true);
+    expect(shouldFilter('Financial Planning & Analysis Coordinator', '', t)).toBe(true);
+    expect(shouldFilter('Data Analyst', '', t)).toBe(true);
+    expect(shouldFilter('Project Coordinator', '', t)).toBe(true);
+    expect(shouldFilter('Customer Support Representative', '', t)).toBe(true);
+  });
+
+  it('vetoes explicit non-IT domain phrases', () => {
+    expect(shouldFilter('Software Developer', '', t)).toBe(true);
+    expect(shouldFilter('Siemens Electrical Apprentice', '', t)).toBe(true);
+    expect(shouldFilter('Electrical Engineer', '', t)).toBe(true);
+    expect(shouldFilter('Financial Analyst', '', t)).toBe(true);
+  });
+
+  it('drops senior/sr titles without an entry-friendly role type', () => {
+    expect(shouldFilter('Senior System Administrator', '', t)).toBe(true);
+    expect(shouldFilter('Sr. Specialist, Technical Training', '', t)).toBe(false); // specialist kept (normal domain)
+    expect(shouldFilter('Senior Systems Administrator – CICS on Mainframe', '', t)).toBe(true);
+    expect(shouldFilter('Sr. HPC & IT Systems Engineer', '', t)).toBe(true);
+    expect(shouldFilter('Senior Cloud Technical Lead', '', t)).toBe(true);
+  });
+
+  it('keeps senior titles with an entry-friendly role type', () => {
+    expect(shouldFilter('Senior Systems Analyst', '', t)).toBe(false);
+    expect(shouldFilter('Senior Network Support Specialist', '', t)).toBe(false);
+    expect(shouldFilter('Senior Technician Security', '', t)).toBe(false);
+    expect(shouldFilter('Senior Analyst, Application Support', '', t)).toBe(false);
+  });
+
+  it('blocks senior+specialist in high-barrier sub-domains', () => {
+    expect(shouldFilter('Senior Specialist, Identity & Access Management', '', t)).toBe(true);
+    expect(shouldFilter('Sr Identity Management Specialist', '', t)).toBe(true);
+    expect(shouldFilter('Senior Azure Cloud DevOps Specialist', '', t)).toBe(true);
+    expect(shouldFilter('Senior Cybersecurity Specialist, Vulnerability Management', '', t)).toBe(true);
+    // entry-friendly + specialist in a normal domain still allowed
+    expect(shouldFilter('Sr. Specialist, Technical Training', '', t)).toBe(false);
+    expect(shouldFilter('Senior Desktop Support Specialist', '', t)).toBe(false);
+  });
+
+  it('does not false-fire \\bsr\\b on SRE/CSR or non-senior titles', () => {
+    expect(shouldFilter('Systems Engineer, SRE', '', t)).toBe(false);   // "sre" must not match \bsr\b
+    expect(shouldFilter('Systems Administrator', '', t)).toBe(false);
+  });
+});
