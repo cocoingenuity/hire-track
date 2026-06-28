@@ -1,19 +1,27 @@
 const { scrape } = require('../server/scraper');
 
+// scrape(trackId, onJob) no longer returns an array — it emits each job through
+// the onJob callback (callback pattern since v2.0, commit d25a561). Collect them.
+async function collectJobs(trackId) {
+  const jobs = [];
+  await scrape(trackId, job => { jobs.push(job); });
+  return jobs;
+}
+
 describe('Scraper (DRY_RUN=true)', () => {
-  it('returns array of jobs for it-support', async () => {
-    const jobs = await scrape('it-support');
+  it('emits jobs for it-support via the onJob callback', async () => {
+    const jobs = await collectJobs('it-support');
     expect(Array.isArray(jobs)).toBe(true);
     expect(jobs.length).toBeGreaterThan(0);
   });
 
-  it('returns array of jobs for admin', async () => {
-    const jobs = await scrape('admin');
+  it('emits jobs for admin', async () => {
+    const jobs = await collectJobs('admin');
     expect(jobs.length).toBeGreaterThan(0);
   });
 
-  it('each job has required fields', async () => {
-    const jobs = await scrape('it-support');
+  it('each emitted job has the required fields', async () => {
+    const jobs = await collectJobs('it-support');
     for (const job of jobs) {
       expect(typeof job.title).toBe('string');
       expect(typeof job.company).toBe('string');
@@ -22,7 +30,7 @@ describe('Scraper (DRY_RUN=true)', () => {
     }
   });
 
-  it('throws for unknown track', async () => {
-    await expect(scrape('developer')).rejects.toThrow('Unknown track');
+  it('throws for an unknown track', async () => {
+    await expect(scrape('developer', () => {})).rejects.toThrow('Unknown track');
   });
 });
